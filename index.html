@@ -69,7 +69,7 @@ const db = getDatabase(app);
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 
-// 🔒 Only this Gmail can login
+// 🔒 Only admin Gmail
 const ADMIN_EMAIL = "www.webomprakashjat@gmail.com";
 
 const loginCard = document.getElementById('loginCard');
@@ -80,25 +80,12 @@ const logoutBtn = document.getElementById('logoutBtn');
 const statusDiv = document.getElementById('status');
 const saveBtn = document.getElementById('saveBtn');
 
-// 🔐 Google Sign-In (Popup)
+// 🔐 Sign in with popup
 googleLogin.onclick = async () => {
   try {
-    const result = await signInWithPopup(auth, provider);
-    const user = result.user;
-
-    if (user.email !== ADMIN_EMAIL) {
-      alert("🚫 Access Denied!\nOnly admin can log in.");
-      await signOut(auth);
-      return;
-    }
-
-    alert("✅ Welcome Admin: " + user.email);
-    loginCard.style.display = 'none';
-    panelCard.style.display = 'block';
-    listCard.style.display = 'block';
-    loadRealtime();
-  } catch (error) {
-    alert("Login failed: " + error.message);
+    await signInWithPopup(auth, provider);
+  } catch (err) {
+    alert("Login failed: " + err.message);
   }
 };
 
@@ -110,9 +97,19 @@ logoutBtn.onclick = async () => {
   listCard.style.display = 'none';
 };
 
-// 🧠 Check auth state (auto refresh login)
-onAuthStateChanged(auth, (user) => {
-  if (user && user.email === ADMIN_EMAIL) {
+// 🧠 Auth state watcher
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    if (user.email !== ADMIN_EMAIL) {
+      alert("🚫 Access Denied!\nOnly admin can log in.");
+      await signOut(auth);
+      loginCard.style.display = 'block';
+      panelCard.style.display = 'none';
+      listCard.style.display = 'none';
+      return;
+    }
+
+    // ✅ If admin logged in
     loginCard.style.display = 'none';
     panelCard.style.display = 'block';
     listCard.style.display = 'block';
@@ -124,7 +121,7 @@ onAuthStateChanged(auth, (user) => {
   }
 });
 
-// ✅ Save or Update entry
+// ✅ Save / Update
 saveBtn.onclick = async () => {
   const id = document.getElementById('deviceId').value.trim();
   const key = document.getElementById('key').value.trim();
@@ -132,20 +129,23 @@ saveBtn.onclick = async () => {
   const user = document.getElementById('user').value.trim();
   const allow = document.getElementById('offline').checked;
 
-  if (!id || !key || !exp) { alert("Device ID, Key & Expiry Required!"); return; }
+  if (!id || !key || !exp) {
+    alert("Device ID, Key & Expiry Required!");
+    return;
+  }
 
-  const data = { device_id:id, key:key, expirydate:exp, Allowoffline:allow, user:user };
+  const data = { device_id: id, key: key, expirydate: exp, Allowoffline: allow, user: user };
   await set(ref(db, id), data);
   statusDiv.innerText = "✅ Saved / Updated Successfully!";
-  setTimeout(()=>statusDiv.innerText='',2000);
-  document.getElementById('deviceId').value='';
-  document.getElementById('key').value='';
-  document.getElementById('expiry').value='';
-  document.getElementById('user').value='';
-  document.getElementById('offline').checked=false;
+  setTimeout(() => statusDiv.innerText = '', 2000);
+  document.getElementById('deviceId').value = '';
+  document.getElementById('key').value = '';
+  document.getElementById('expiry').value = '';
+  document.getElementById('user').value = '';
+  document.getElementById('offline').checked = false;
 };
 
-// 🧠 Load Realtime Data
+// 🧠 Load realtime data
 function loadRealtime() {
   const list = document.getElementById('list');
   onValue(ref(db), (snapshot) => {
@@ -169,28 +169,28 @@ function loadRealtime() {
   });
 }
 
-// 🧾 Delete Entry
+// 🗑 Delete
 window.firebaseDelete = async (id) => {
   if (confirm("Delete this key?")) {
     await remove(ref(db, id));
   }
 };
 
-// ✏️ Update entry (fills data in form)
+// ✏️ Update
 window.updateItem = (id) => {
-  import("https://www.gstatic.com/firebasejs/12.5.0/firebase-database.js").then(({ getDatabase, ref, onValue })=>{
+  import("https://www.gstatic.com/firebasejs/12.5.0/firebase-database.js").then(({ getDatabase, ref, onValue }) => {
     const database = getDatabase(app);
-    onValue(ref(database, id), (snapshot)=>{
+    onValue(ref(database, id), (snapshot) => {
       const item = snapshot.val();
-      if (item){
-        document.getElementById('deviceId').value=item.device_id;
-        document.getElementById('key').value=item.key;
-        document.getElementById('expiry').value=item.expirydate;
-        document.getElementById('user').value=item.user;
-        document.getElementById('offline').checked=item.Allowoffline;
-        window.scrollTo(0,0);
+      if (item) {
+        document.getElementById('deviceId').value = item.device_id;
+        document.getElementById('key').value = item.key;
+        document.getElementById('expiry').value = item.expirydate;
+        document.getElementById('user').value = item.user;
+        document.getElementById('offline').checked = item.Allowoffline;
+        window.scrollTo(0, 0);
       }
-    }, { onlyOnce:true });
+    }, { onlyOnce: true });
   });
 };
 </script>
