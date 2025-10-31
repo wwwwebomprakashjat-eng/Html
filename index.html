@@ -6,28 +6,44 @@
   <title>🔥 NMMS Admin Panel</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
     body {
       font-family: 'Poppins', sans-serif;
       background: linear-gradient(135deg, #0a0a0a, #1f1f1f);
       color: #f5f5f5;
-      margin: 0;
-      padding: 0;
+      margin: 0; padding: 0;
       min-height: 100vh;
     }
     header {
       background: #111;
       padding: 15px 25px;
-      text-align: center;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       border-bottom: 1px solid #333;
       box-shadow: 0 0 10px rgba(255,255,255,0.1);
     }
     header h1 {
       margin: 0;
       color: #ffc107;
-      font-size: 1.8em;
+      font-size: 1.5em;
+    }
+    .admin-info {
+      font-size: 0.9em;
+      color: #ddd;
+    }
+    .admin-info span {
+      color: #ffc107;
+    }
+    .logout-btn {
+      background: #e53935;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-left: 10px;
     }
     main {
       max-width: 1100px;
@@ -52,21 +68,26 @@
     }
     input, button {
       padding: 10px;
-      margin: 6px 4px;
+      margin: 8px 6px;
       border-radius: 8px;
       border: none;
       font-size: 15px;
+      transition: all 0.2s ease;
     }
     input {
-      width: calc(25% - 10px);
-      background: #2a2a2a;
+      width: calc(25% - 12px);
+      background: #2d2d2d;
       color: #fff;
       border: 1px solid #444;
+      outline: none;
     }
     input:focus {
-      outline: none;
+      background: #333;
       border-color: #ffc107;
-      box-shadow: 0 0 6px #ffc10755;
+      box-shadow: 0 0 8px #ffc10755;
+    }
+    input::placeholder {
+      color: #aaa;
     }
     button {
       cursor: pointer;
@@ -79,18 +100,9 @@
       padding: 12px 18px;
       font-size: 1em;
     }
-    button.save {
-      background: #007bff;
-      color: #fff;
-    }
-    button.update {
-      background: #43a047;
-      color: #fff;
-    }
-    button.danger {
-      background: #e53935;
-      color: #fff;
-    }
+    button.save { background: #007bff; color: #fff; }
+    button.update { background: #43a047; color: #fff; }
+    button.danger { background: #e53935; color: #fff; }
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -112,9 +124,7 @@
       font-size: 14px;
       color: #ddd;
     }
-    .item b {
-      color: #ffc107;
-    }
+    .item b { color: #ffc107; }
     footer {
       text-align: center;
       color: #888;
@@ -127,14 +137,20 @@
       justify-content: space-between;
     }
     @media (max-width: 768px) {
+      header { flex-direction: column; text-align: center; }
       input { width: 100%; margin: 8px 0; }
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>🔥 NMMS Admin Control Panel</h1>
+    <h1>🔥 NMMS Admin Panel</h1>
+    <div class="admin-info" id="adminInfo" style="display:none;">
+      Logged in as: <span id="adminEmail"></span>
+      <button class="logout-btn" id="logoutBtn">🚪 Logout</button>
+    </div>
   </header>
+
   <main>
     <div id="loginSection" class="card" style="text-align:center;">
       <h3>Admin Login</h3>
@@ -184,30 +200,42 @@
     const auth = getAuth(app);
     const provider = new GoogleAuthProvider();
 
+    const ADMIN_EMAIL = "www.webomprakashjat@gmail.com";
+
     const loginBtn = document.getElementById("loginBtn");
     const loginSection = document.getElementById("loginSection");
     const mainPanel = document.getElementById("mainPanel");
     const dataList = document.getElementById("dataList");
+    const adminInfo = document.getElementById("adminInfo");
+    const adminEmailSpan = document.getElementById("adminEmail");
+    const logoutBtn = document.getElementById("logoutBtn");
 
     loginBtn.addEventListener("click", async () => {
       try {
         const result = await signInWithPopup(auth, provider);
         const user = result.user;
 
-        if (user.email !== "www.webomprakashjat@gmail.com") {
+        if (user.email !== ADMIN_EMAIL) {
           alert("🚫 Access Denied!\nOnly admin can log in.");
           await signOut(auth);
           location.reload();
           return;
         }
 
-        alert("✅ Welcome Admin: " + user.email);
+        adminEmailSpan.textContent = user.email;
+        adminInfo.style.display = "block";
         loginSection.style.display = "none";
         mainPanel.style.display = "block";
         loadData();
       } catch (err) {
         alert("❌ Login failed: " + err.message);
       }
+    });
+
+    logoutBtn.addEventListener("click", async () => {
+      await signOut(auth);
+      alert("✅ Logged out successfully!");
+      location.reload();
     });
 
     function loadData() {
