@@ -1,46 +1,46 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>🔥 Firebase JSON Admin Panel (Secure Login)</title>
   <style>
     body {
       font-family: "Poppins", sans-serif;
-      background: #222;
+      background: #1c1c1c;
       color: #fff;
       text-align: center;
       margin: 0;
       padding: 0;
     }
     h2 {
-      color: #ffd54f;
+      color: #ffc107;
     }
     .card {
-      background: #333;
-      margin: 15px auto;
-      padding: 15px;
-      border-radius: 10px;
-      max-width: 700px;
-      box-shadow: 0 0 10px #00000055;
+      background: #2b2b2b;
+      border-radius: 12px;
+      box-shadow: 0 0 10px #00000066;
+      margin: 20px auto;
+      padding: 20px;
+      max-width: 750px;
     }
     input, button {
       padding: 10px;
+      margin: 5px;
       border-radius: 6px;
       border: none;
-      margin: 6px;
+      font-size: 14px;
     }
     input {
-      width: 22%;
+      width: 23%;
     }
     button {
-      background: #1e88e5;
-      color: #fff;
       cursor: pointer;
-      transition: 0.3s;
+      color: #fff;
+      background: #007bff;
     }
     button:hover {
-      background: #1565c0;
+      background: #0056b3;
     }
     .danger {
       background: #e53935;
@@ -50,33 +50,32 @@
     }
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
       gap: 10px;
-      justify-items: center;
     }
   </style>
 </head>
 <body>
   <h2>🔥 Firebase JSON Admin Panel (Google Login)</h2>
 
-  <!-- Login -->
+  <!-- LOGIN SECTION -->
   <div id="loginSection" class="card">
     <h3>Admin Login</h3>
     <button id="loginBtn">🔐 Sign in with Google</button>
   </div>
 
-  <!-- Admin Panel -->
+  <!-- MAIN PANEL -->
   <div id="mainPanel" style="display:none;">
     <div class="card">
       <h3>Add / Update Key</h3>
-      <input type="text" id="deviceId" placeholder="Device ID" />
-      <input type="text" id="key" placeholder="Key" />
-      <input type="text" id="expiry" placeholder="Expiry (dd-mm-yyyy)" />
-      <input type="text" id="username" placeholder="User name (remark)" />
+      <input type="text" id="deviceId" placeholder="Device ID">
+      <input type="text" id="key" placeholder="Key">
+      <input type="text" id="expiry" placeholder="Expiry (dd-mm-yyyy)">
+      <input type="text" id="username" placeholder="User name">
       <label>
-        <input type="checkbox" id="allowOffline" /> Allow Offline
+        <input type="checkbox" id="allowOffline"> Allow Offline
       </label>
-      <br />
+      <br>
       <button id="saveBtn">💾 Save / Update</button>
     </div>
 
@@ -86,17 +85,13 @@
     </div>
   </div>
 
+  <!-- FIREBASE SCRIPT -->
   <script type="module">
-    // Firebase imports
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-    import {
-      getDatabase, ref, onValue, set, remove
-    } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-database.js";
-    import {
-      getAuth, signInWithPopup, GoogleAuthProvider, signOut
-    } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+    import { getDatabase, ref, onValue, set, remove } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-database.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 
-    // 🔥 Firebase Config
+    // Firebase Config
     const firebaseConfig = {
       apiKey: "AIzaSyA1FIDLD-AKVlEz-AJiweYVdxhIP0Rnijk",
       authDomain: "opjat-2005.firebaseapp.com",
@@ -112,13 +107,11 @@
     const auth = getAuth(app);
     const provider = new GoogleAuthProvider();
 
-    // Login button
     document.getElementById("loginBtn").addEventListener("click", async () => {
       try {
         const result = await signInWithPopup(auth, provider);
         const user = result.user;
 
-        // ✅ Only allow your Gmail
         if (user.email !== "www.webomprakashjat@gmail.com") {
           alert("🚫 Access Denied!\nOnly admin can log in.");
           await signOut(auth);
@@ -129,13 +122,12 @@
         alert("✅ Welcome Admin: " + user.email);
         document.getElementById("loginSection").style.display = "none";
         document.getElementById("mainPanel").style.display = "block";
-        loadData(); // start loading data
+        loadData();
       } catch (err) {
         alert("Login failed: " + err.message);
       }
     });
 
-    // Load data in realtime
     function loadData() {
       const dataList = document.getElementById("dataList");
       const dbRef = ref(db, "/");
@@ -146,14 +138,15 @@
           dataList.innerHTML = "<p>No data found.</p>";
           return;
         }
-
         Object.keys(data).forEach((id) => {
           const item = data[id];
           const div = document.createElement("div");
-          div.className = "card";
+          div.classList.add("card");
           div.innerHTML = `
             <p><b>${id}</b> - ${item.user}</p>
-            <p>Key: ${item.key} | Expiry: ${item.expirydate}</p>
+            <p>🔑 Key: ${item.key}</p>
+            <p>⏳ Expiry: ${item.expirydate}</p>
+            <p>📴 Offline: ${item.Allowoffline}</p>
             <button class="update" onclick="updateItem('${id}')">✏️ Update</button>
             <button class="danger" onclick="deleteItem('${id}')">🗑 Delete</button>
           `;
@@ -162,7 +155,6 @@
       });
     }
 
-    // Save or update
     document.getElementById("saveBtn").addEventListener("click", async () => {
       const id = document.getElementById("deviceId").value.trim();
       const key = document.getElementById("key").value.trim();
@@ -183,7 +175,7 @@
         Allowoffline: allow
       });
 
-      alert("✅ Data saved/updated successfully!");
+      alert("✅ Saved / Updated Successfully!");
       document.getElementById("deviceId").value = "";
       document.getElementById("key").value = "";
       document.getElementById("expiry").value = "";
@@ -191,15 +183,13 @@
       document.getElementById("allowOffline").checked = false;
     });
 
-    // Delete record
     window.deleteItem = async (id) => {
-      if (confirm("Are you sure you want to delete this key?")) {
+      if (confirm("Delete this key?")) {
         await remove(ref(db, id));
         alert("🗑 Deleted successfully!");
       }
     };
 
-    // Update record (load values into input)
     window.updateItem = async (id) => {
       const dbRef = ref(db, id);
       onValue(dbRef, (snapshot) => {
@@ -210,68 +200,10 @@
           document.getElementById("expiry").value = item.expirydate;
           document.getElementById("username").value = item.user;
           document.getElementById("allowOffline").checked = item.Allowoffline;
+          window.scrollTo(0, 0);
         }
       }, { onlyOnce: true });
     };
   </script>
-</body>
-</html>  statusDiv.innerText = "✅ Saved / Updated Successfully!";
-  setTimeout(()=>statusDiv.innerText='',2000);
-  document.getElementById('deviceId').value='';
-  document.getElementById('key').value='';
-  document.getElementById('expiry').value='';
-  document.getElementById('user').value='';
-  document.getElementById('offline').checked=false;
-};
-
-// 🧠 Load Realtime Data
-function loadRealtime() {
-  const list = document.getElementById('list');
-  onValue(ref(db), (snapshot) => {
-    const data = snapshot.val() || {};
-    list.innerHTML = '';
-    Object.keys(data).forEach(id => {
-      const item = data[id];
-      const div = document.createElement('div');
-      div.classList.add('box');
-      div.innerHTML = `
-        <b>${item.device_id || id}</b><br>
-        👤 ${item.user || '—'}<br>
-        🔑 Key: <b>${item.key}</b><br>
-        ⏰ Expiry: ${item.expirydate}<br>
-        📴 Offline: ${item.Allowoffline}<br>
-        <button class="update" onclick="updateItem('${id}')">✏️ Update</button>
-        <button class="danger" onclick="firebaseDelete('${id}')">🗑 Delete</button>
-      `;
-      list.appendChild(div);
-    });
-  });
-}
-
-// 🧾 Delete Entry
-window.firebaseDelete = async (id) => {
-  if (confirm("Delete this key?")) {
-    await remove(ref(db, id));
-  }
-};
-
-// ✏️ Update entry (fills data in form)
-window.updateItem = (id) => {
-  import("https://www.gstatic.com/firebasejs/12.5.0/firebase-database.js").then(({ getDatabase, ref, onValue })=>{
-    const database = getDatabase(app);
-    onValue(ref(database, id), (snapshot)=>{
-      const item = snapshot.val();
-      if (item){
-        document.getElementById('deviceId').value=item.device_id;
-        document.getElementById('key').value=item.key;
-        document.getElementById('expiry').value=item.expirydate;
-        document.getElementById('user').value=item.user;
-        document.getElementById('offline').checked=item.Allowoffline;
-        window.scrollTo(0,0);
-      }
-    }, { onlyOnce:true });
-  });
-};
-</script>
 </body>
 </html>
