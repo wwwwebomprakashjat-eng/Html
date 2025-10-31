@@ -21,7 +21,7 @@ label{display:block;margin-bottom:5px}
 </head>
 <body>
 
-<h2>🔥 Firebase JSON Admin Panel (Google Login)</h2>
+<h2>🔥 Firebase JSON Admin Panel (Secure Google Login)</h2>
 
 <div class="card" id="loginCard">
   <button id="googleLogin" class="save">🔐 Sign in with Google</button>
@@ -51,7 +51,10 @@ label{display:block;margin-bottom:5px}
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
 import { getDatabase, ref, set, remove, onValue } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-database.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+import { 
+  getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, 
+  onAuthStateChanged, signOut 
+} from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 
 // 🔧 Firebase Config
 const firebaseConfig = {
@@ -69,7 +72,7 @@ const db = getDatabase(app);
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 
-// 🔒 Only admin Gmail
+// 🧿 Only admin Gmail allowed
 const ADMIN_EMAIL = "www.webomprakashjat@gmail.com";
 
 const loginCard = document.getElementById('loginCard');
@@ -80,24 +83,31 @@ const logoutBtn = document.getElementById('logoutBtn');
 const statusDiv = document.getElementById('status');
 const saveBtn = document.getElementById('saveBtn');
 
-// 🔐 Sign in with popup
+// 🚀 Google Login (Redirect)
 googleLogin.onclick = async () => {
-  try {
-    await signInWithPopup(auth, provider);
-  } catch (err) {
-    alert("Login failed: " + err.message);
+  await signInWithRedirect(auth, provider);
+};
+
+// 🧩 Handle redirect result (after returning from Google)
+getRedirectResult(auth).then(async (result) => {
+  if (result && result.user) {
+    const user = result.user;
+    if (user.email !== ADMIN_EMAIL) {
+      alert("🚫 Access Denied!\nOnly admin can log in.");
+      await signOut(auth);
+      return;
+    }
+    alert("✅ Login Successful: " + user.email);
+    loginCard.style.display = 'none';
+    panelCard.style.display = 'block';
+    listCard.style.display = 'block';
+    loadRealtime();
   }
-};
+}).catch((error) => {
+  console.error("Login error:", error.message);
+});
 
-// 🚪 Logout
-logoutBtn.onclick = async () => {
-  await signOut(auth);
-  loginCard.style.display = 'block';
-  panelCard.style.display = 'none';
-  listCard.style.display = 'none';
-};
-
-// 🧠 Auth state watcher
+// 🧠 Auth state check (for returning users)
 onAuthStateChanged(auth, async (user) => {
   if (user) {
     if (user.email !== ADMIN_EMAIL) {
@@ -108,8 +118,6 @@ onAuthStateChanged(auth, async (user) => {
       listCard.style.display = 'none';
       return;
     }
-
-    // ✅ If admin logged in
     loginCard.style.display = 'none';
     panelCard.style.display = 'block';
     listCard.style.display = 'block';
@@ -121,7 +129,16 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-// ✅ Save / Update
+// 🚪 Logout
+logoutBtn.onclick = async () => {
+  await signOut(auth);
+  alert("Logged out!");
+  loginCard.style.display = 'block';
+  panelCard.style.display = 'none';
+  listCard.style.display = 'none';
+};
+
+// ✅ Save or Update
 saveBtn.onclick = async () => {
   const id = document.getElementById('deviceId').value.trim();
   const key = document.getElementById('key').value.trim();
