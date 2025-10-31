@@ -1,215 +1,209 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>🔥 Firebase JSON Admin Panel</title>
-<style>
-body{font-family:Arial,Helvetica,sans-serif;background:#f7f9fb;margin:0;padding:20px}
-h2{text-align:center;color:#333}
-.card{background:#fff;padding:16px;border-radius:10px;box-shadow:0 3px 10px rgba(0,0,0,0.1);margin-bottom:20px}
-input,button{padding:8px;margin:6px 0;border:1px solid #ccc;border-radius:5px;width:100%}
-button{cursor:pointer}
-button.save{background:#007bff;color:#fff}
-button.update{background:#28a745;color:white;margin-top:5px}
-button.danger{background:#dc3545;color:white;margin-top:5px}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:15px}
-.box{background:#fff;border:1px solid #ddd;border-radius:8px;padding:12px;box-shadow:0 2px 5px rgba(0,0,0,0.05)}
-.box b{color:#007bff}
-label{display:block;margin-bottom:5px}
-#status{text-align:center;color:green;font-weight:bold;margin-top:10px}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🔥 Firebase JSON Admin Panel (Secure Login)</title>
+  <style>
+    body {
+      font-family: "Poppins", sans-serif;
+      background: #1c1c1c;
+      color: #fff;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+    }
+    h2 {
+      color: #ffc107;
+    }
+    .card {
+      background: #2b2b2b;
+      border-radius: 12px;
+      box-shadow: 0 0 10px #00000066;
+      margin: 20px auto;
+      padding: 20px;
+      max-width: 750px;
+    }
+    input, button {
+      padding: 10px;
+      margin: 5px;
+      border-radius: 6px;
+      border: none;
+      font-size: 14px;
+    }
+    input {
+      width: 23%;
+    }
+    button {
+      cursor: pointer;
+      color: #fff;
+      background: #007bff;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    .danger {
+      background: #e53935;
+    }
+    .update {
+      background: #43a047;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 10px;
+    }
+  </style>
 </head>
 <body>
+  <h2>🔥 Firebase JSON Admin Panel (Google Login)</h2>
 
-<h2>🔥 Firebase JSON Admin Panel (Secure Google Login)</h2>
+  <!-- LOGIN SECTION -->
+  <div id="loginSection" class="card">
+    <h3>Admin Login</h3>
+    <button id="loginBtn">🔐 Sign in with Google</button>
+  </div>
 
-<div class="card" id="loginCard">
-  <button id="googleLogin" class="save">🔐 Sign in with Google</button>
-</div>
+  <!-- MAIN PANEL -->
+  <div id="mainPanel" style="display:none;">
+    <div class="card">
+      <h3>Add / Update Key</h3>
+      <input type="text" id="deviceId" placeholder="Device ID">
+      <input type="text" id="key" placeholder="Key">
+      <input type="text" id="expiry" placeholder="Expiry (dd-mm-yyyy)">
+      <input type="text" id="username" placeholder="User name">
+      <label>
+        <input type="checkbox" id="allowOffline"> Allow Offline
+      </label>
+      <br>
+      <button id="saveBtn">💾 Save / Update</button>
+    </div>
 
-<div class="card" id="panelCard" style="display:none">
-  <h3>Add / Update Key</h3>
-  <label>Device ID</label>
-  <input id="deviceId" placeholder="Enter Device ID">
-  <label>Key</label>
-  <input id="key" placeholder="Enter Key">
-  <label>Expiry Date (dd-mm-yyyy)</label>
-  <input id="expiry" placeholder="25-12-2025">
-  <label>User (Remark)</label>
-  <input id="user" placeholder="Enter User Name">
-  <label><input id="offline" type="checkbox"> Allow Offline</label>
-  <button id="saveBtn" class="save">💾 Save / Update</button>
-  <div id="status"></div>
-</div>
+    <div class="card">
+      <h3>Existing Keys (Realtime)</h3>
+      <div id="dataList" class="grid"></div>
+    </div>
+  </div>
 
-<div class="card" id="listCard" style="display:none">
-  <h3>Existing Keys (Realtime)</h3>
-  <div id="list" class="grid"></div>
-  <button id="logoutBtn" class="danger">Logout</button>
-</div>
+  <!-- FIREBASE SCRIPT -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+    import { getDatabase, ref, onValue, set, remove } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-database.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-import { getDatabase, ref, set, remove, onValue } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-database.js";
-import { 
-  getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, 
-  onAuthStateChanged, signOut 
-} from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+    // Firebase Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyA1FIDLD-AKVlEz-AJiweYVdxhIP0Rnijk",
+      authDomain: "opjat-2005.firebaseapp.com",
+      databaseURL: "https://opjat-2005-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "opjat-2005",
+      storageBucket: "opjat-2005.firebasestorage.app",
+      messagingSenderId: "2500552965",
+      appId: "1:2500552965:web:4f6664a366967a2525af6c"
+    };
 
-// 🔧 Firebase Config
-const firebaseConfig = {
-  apiKey: "AIzaSyA1FIDLD-AKVlEz-AJiweYVdxhIP0Rnijk",
-  authDomain: "opjat-2005.firebaseapp.com",
-  databaseURL: "https://opjat-2005-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "opjat-2005",
-  storageBucket: "opjat-2005.firebasestorage.app",
-  messagingSenderId: "2500552965",
-  appId: "1:2500552965:web:4f6664a366967a2525af6c"
-};
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const auth = getAuth(app);
+    const provider = new GoogleAuthProvider();
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-const auth = getAuth(app);
-const provider = new GoogleAuthProvider();
+    document.getElementById("loginBtn").addEventListener("click", async () => {
+      try {
+        const result = await signInWithPopup(auth, provider);
+        const user = result.user;
 
-// 🧿 Only admin Gmail allowed
-const ADMIN_EMAIL = "www.webomprakashjat@gmail.com";
+        if (user.email !== "www.webomprakashjat@gmail.com") {
+          alert("🚫 Access Denied!\nOnly admin can log in.");
+          await signOut(auth);
+          location.reload();
+          return;
+        }
 
-const loginCard = document.getElementById('loginCard');
-const panelCard = document.getElementById('panelCard');
-const listCard = document.getElementById('listCard');
-const googleLogin = document.getElementById('googleLogin');
-const logoutBtn = document.getElementById('logoutBtn');
-const statusDiv = document.getElementById('status');
-const saveBtn = document.getElementById('saveBtn');
-
-// 🚀 Google Login (Redirect)
-googleLogin.onclick = async () => {
-  await signInWithRedirect(auth, provider);
-};
-
-// 🧩 Handle redirect result (after returning from Google)
-getRedirectResult(auth).then(async (result) => {
-  if (result && result.user) {
-    const user = result.user;
-    if (user.email !== ADMIN_EMAIL) {
-      alert("🚫 Access Denied!\nOnly admin can log in.");
-      await signOut(auth);
-      return;
-    }
-    alert("✅ Login Successful: " + user.email);
-    loginCard.style.display = 'none';
-    panelCard.style.display = 'block';
-    listCard.style.display = 'block';
-    loadRealtime();
-  }
-}).catch((error) => {
-  console.error("Login error:", error.message);
-});
-
-// 🧠 Auth state check (for returning users)
-onAuthStateChanged(auth, async (user) => {
-  if (user) {
-    if (user.email !== ADMIN_EMAIL) {
-      alert("🚫 Access Denied!\nOnly admin can log in.");
-      await signOut(auth);
-      loginCard.style.display = 'block';
-      panelCard.style.display = 'none';
-      listCard.style.display = 'none';
-      return;
-    }
-    loginCard.style.display = 'none';
-    panelCard.style.display = 'block';
-    listCard.style.display = 'block';
-    loadRealtime();
-  } else {
-    loginCard.style.display = 'block';
-    panelCard.style.display = 'none';
-    listCard.style.display = 'none';
-  }
-});
-
-// 🚪 Logout
-logoutBtn.onclick = async () => {
-  await signOut(auth);
-  alert("Logged out!");
-  loginCard.style.display = 'block';
-  panelCard.style.display = 'none';
-  listCard.style.display = 'none';
-};
-
-// ✅ Save or Update
-saveBtn.onclick = async () => {
-  const id = document.getElementById('deviceId').value.trim();
-  const key = document.getElementById('key').value.trim();
-  const exp = document.getElementById('expiry').value.trim();
-  const user = document.getElementById('user').value.trim();
-  const allow = document.getElementById('offline').checked;
-
-  if (!id || !key || !exp) {
-    alert("Device ID, Key & Expiry Required!");
-    return;
-  }
-
-  const data = { device_id: id, key: key, expirydate: exp, Allowoffline: allow, user: user };
-  await set(ref(db, id), data);
-  statusDiv.innerText = "✅ Saved / Updated Successfully!";
-  setTimeout(() => statusDiv.innerText = '', 2000);
-  document.getElementById('deviceId').value = '';
-  document.getElementById('key').value = '';
-  document.getElementById('expiry').value = '';
-  document.getElementById('user').value = '';
-  document.getElementById('offline').checked = false;
-};
-
-// 🧠 Load realtime data
-function loadRealtime() {
-  const list = document.getElementById('list');
-  onValue(ref(db), (snapshot) => {
-    const data = snapshot.val() || {};
-    list.innerHTML = '';
-    Object.keys(data).forEach(id => {
-      const item = data[id];
-      const div = document.createElement('div');
-      div.classList.add('box');
-      div.innerHTML = `
-        <b>${item.device_id || id}</b><br>
-        👤 ${item.user || '—'}<br>
-        🔑 Key: <b>${item.key}</b><br>
-        ⏰ Expiry: ${item.expirydate}<br>
-        📴 Offline: ${item.Allowoffline}<br>
-        <button class="update" onclick="updateItem('${id}')">✏️ Update</button>
-        <button class="danger" onclick="firebaseDelete('${id}')">🗑 Delete</button>
-      `;
-      list.appendChild(div);
-    });
-  });
-}
-
-// 🗑 Delete
-window.firebaseDelete = async (id) => {
-  if (confirm("Delete this key?")) {
-    await remove(ref(db, id));
-  }
-};
-
-// ✏️ Update
-window.updateItem = (id) => {
-  import("https://www.gstatic.com/firebasejs/12.5.0/firebase-database.js").then(({ getDatabase, ref, onValue }) => {
-    const database = getDatabase(app);
-    onValue(ref(database, id), (snapshot) => {
-      const item = snapshot.val();
-      if (item) {
-        document.getElementById('deviceId').value = item.device_id;
-        document.getElementById('key').value = item.key;
-        document.getElementById('expiry').value = item.expirydate;
-        document.getElementById('user').value = item.user;
-        document.getElementById('offline').checked = item.Allowoffline;
-        window.scrollTo(0, 0);
+        alert("✅ Welcome Admin: " + user.email);
+        document.getElementById("loginSection").style.display = "none";
+        document.getElementById("mainPanel").style.display = "block";
+        loadData();
+      } catch (err) {
+        alert("Login failed: " + err.message);
       }
-    }, { onlyOnce: true });
-  });
-};
-</script>
+    });
+
+    function loadData() {
+      const dataList = document.getElementById("dataList");
+      const dbRef = ref(db, "/");
+      onValue(dbRef, (snapshot) => {
+        const data = snapshot.val();
+        dataList.innerHTML = "";
+        if (!data) {
+          dataList.innerHTML = "<p>No data found.</p>";
+          return;
+        }
+        Object.keys(data).forEach((id) => {
+          const item = data[id];
+          const div = document.createElement("div");
+          div.classList.add("card");
+          div.innerHTML = `
+            <p><b>${id}</b> - ${item.user}</p>
+            <p>🔑 Key: ${item.key}</p>
+            <p>⏳ Expiry: ${item.expirydate}</p>
+            <p>📴 Offline: ${item.Allowoffline}</p>
+            <button class="update" onclick="updateItem('${id}')">✏️ Update</button>
+            <button class="danger" onclick="deleteItem('${id}')">🗑 Delete</button>
+          `;
+          dataList.appendChild(div);
+        });
+      });
+    }
+
+    document.getElementById("saveBtn").addEventListener("click", async () => {
+      const id = document.getElementById("deviceId").value.trim();
+      const key = document.getElementById("key").value.trim();
+      const expiry = document.getElementById("expiry").value.trim();
+      const user = document.getElementById("username").value.trim();
+      const allow = document.getElementById("allowOffline").checked;
+
+      if (!id || !key || !expiry || !user) {
+        alert("Please fill all fields!");
+        return;
+      }
+
+      await set(ref(db, id), {
+        device_id: id,
+        key: key,
+        expirydate: expiry,
+        user: user,
+        Allowoffline: allow
+      });
+
+      alert("✅ Saved / Updated Successfully!");
+      document.getElementById("deviceId").value = "";
+      document.getElementById("key").value = "";
+      document.getElementById("expiry").value = "";
+      document.getElementById("username").value = "";
+      document.getElementById("allowOffline").checked = false;
+    });
+
+    window.deleteItem = async (id) => {
+      if (confirm("Delete this key?")) {
+        await remove(ref(db, id));
+        alert("🗑 Deleted successfully!");
+      }
+    };
+
+    window.updateItem = async (id) => {
+      const dbRef = ref(db, id);
+      onValue(dbRef, (snapshot) => {
+        const item = snapshot.val();
+        if (item) {
+          document.getElementById("deviceId").value = item.device_id;
+          document.getElementById("key").value = item.key;
+          document.getElementById("expiry").value = item.expirydate;
+          document.getElementById("username").value = item.user;
+          document.getElementById("allowOffline").checked = item.Allowoffline;
+          window.scrollTo(0, 0);
+        }
+      }, { onlyOnce: true });
+    };
+  </script>
 </body>
 </html>
