@@ -51,7 +51,7 @@ label{display:block;margin-bottom:5px}
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
 import { getDatabase, ref, set, remove, onValue } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-database.js";
-import { getAuth, GoogleAuthProvider, signInWithRedirect, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 
 // 🔧 Firebase Config
 const firebaseConfig = {
@@ -80,26 +80,39 @@ const logoutBtn = document.getElementById('logoutBtn');
 const statusDiv = document.getElementById('status');
 const saveBtn = document.getElementById('saveBtn');
 
+// 🔐 Google Sign-In (Popup)
 googleLogin.onclick = async () => {
-  await signInWithRedirect(auth, provider);
-};
+  try {
+    const result = await signInWithPopup(auth, provider);
+    const user = result.user;
 
-logoutBtn.onclick = () => {
-  signOut(auth);
-};
-
-// ✅ Authentication check
-onAuthStateChanged(auth, async (user) => {
-  if (user) {
     if (user.email !== ADMIN_EMAIL) {
       alert("🚫 Access Denied!\nOnly admin can log in.");
       await signOut(auth);
-      loginCard.style.display = 'block';
-      panelCard.style.display = 'none';
-      listCard.style.display = 'none';
       return;
     }
-    // ✅ Correct admin email
+
+    alert("✅ Welcome Admin: " + user.email);
+    loginCard.style.display = 'none';
+    panelCard.style.display = 'block';
+    listCard.style.display = 'block';
+    loadRealtime();
+  } catch (error) {
+    alert("Login failed: " + error.message);
+  }
+};
+
+// 🚪 Logout
+logoutBtn.onclick = async () => {
+  await signOut(auth);
+  loginCard.style.display = 'block';
+  panelCard.style.display = 'none';
+  listCard.style.display = 'none';
+};
+
+// 🧠 Check auth state (auto refresh login)
+onAuthStateChanged(auth, (user) => {
+  if (user && user.email === ADMIN_EMAIL) {
     loginCard.style.display = 'none';
     panelCard.style.display = 'block';
     listCard.style.display = 'block';
