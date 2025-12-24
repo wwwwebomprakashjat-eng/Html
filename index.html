@@ -176,9 +176,78 @@
       font-size: 0.85em;
       margin-left: 10px;
     }
+    
+    /* Modal Styles */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.7);
+      animation: fadeIn 0.3s ease;
+    }
+    .modal-content {
+      background: linear-gradient(135deg, #1e1e1e, #2a2a2a);
+      margin: 15% auto;
+      padding: 30px;
+      border: 2px solid #e53935;
+      border-radius: 15px;
+      width: 80%;
+      max-width: 400px;
+      text-align: center;
+      box-shadow: 0 0 30px rgba(229, 57, 53, 0.5);
+      animation: slideDown 0.3s ease;
+    }
+    .modal-content h2 {
+      color: #e53935;
+      margin-top: 0;
+      font-size: 1.8em;
+    }
+    .modal-content p {
+      color: #ddd;
+      font-size: 1.1em;
+      margin: 20px 0;
+    }
+    .modal-btn {
+      background: #e53935;
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      font-size: 1em;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .modal-btn:hover {
+      background: #c62828;
+      transform: scale(1.05);
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes slideDown {
+      from { 
+        transform: translateY(-50px);
+        opacity: 0;
+      }
+      to { 
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+    
     @media (max-width: 768px) {
       header { flex-direction: column; text-align: center; }
       input, select { width: 100%; margin: 8px 0; }
+      .modal-content {
+        width: 90%;
+        margin: 30% auto;
+      }
     }
   </style>
 </head>
@@ -222,6 +291,17 @@
       </div>
     </div>
   </main>
+
+  <!-- Access Denied Modal -->
+  <div id="accessDeniedModal" class="modal">
+    <div class="modal-content">
+      <h2>🚫 Access Denied!</h2>
+      <p>Only authorized admin can access this panel.</p>
+      <p style="font-size: 0.9em; color: #aaa;">Please contact the administrator for access.</p>
+      <button class="modal-btn" onclick="closeModalAndReload()">OK</button>
+    </div>
+  </div>
+
   <footer>© 2025 NMMS Tools | Admin Panel</footer>
 
   <!-- Firebase Script -->
@@ -258,6 +338,13 @@
     const logoutBtn = document.getElementById("logoutBtn");
     const insertPosition = document.getElementById("insertPosition");
     const positionInfo = document.getElementById("positionInfo");
+    const accessDeniedModal = document.getElementById("accessDeniedModal");
+
+    // Global function for modal close
+    window.closeModalAndReload = function() {
+      accessDeniedModal.style.display = "none";
+      location.reload();
+    };
 
     loginBtn.addEventListener("click", async () => {
       try {
@@ -265,9 +352,11 @@
         const user = result.user;
 
         if (user.email !== ADMIN_EMAIL) {
-          alert("🚫 Access Denied!\nOnly admin can log in.");
+          // Show modal instead of alert
+          accessDeniedModal.style.display = "block";
+          
+          // Sign out the unauthorized user
           await signOut(auth);
-          location.reload();
           return;
         }
 
@@ -277,7 +366,11 @@
         mainPanel.style.display = "block";
         loadData();
       } catch (err) {
-        alert("❌ Login failed: " + err.message);
+        if (err.code === 'auth/popup-closed-by-user') {
+          console.log("Login popup closed by user");
+        } else {
+          alert("❌ Login failed: " + err.message);
+        }
       }
     });
 
@@ -290,23 +383,22 @@
     function updatePositionDropdown(keysCount, isUpdate = false) {
       insertPosition.innerHTML = "";
       totalKeys = keysCount;
-      
+
       const maxPosition = isUpdate ? keysCount : keysCount + 1;
-      
+
       for (let i = 1; i <= maxPosition; i++) {
         const option = document.createElement("option");
         option.value = i;
         option.textContent = `${i}${getOrdinalSuffix(i)} Position`;
         insertPosition.appendChild(option);
       }
-      
-      // Set default to 3rd position if available
+
       if (maxPosition >= 3) {
         insertPosition.value = "3";
       } else {
         insertPosition.value = maxPosition;
       }
-      
+
       positionInfo.textContent = isUpdate ? `(Total ${keysCount} keys)` : `(Will be ${keysCount + 1} keys after adding)`;
     }
 
@@ -323,7 +415,7 @@
       onValue(ref(db, "/"), (snapshot) => {
         const data = snapshot.val();
         dataList.innerHTML = "";
-        
+
         if (!data) {
           dataList.innerHTML = "<p>No keys found.</p>";
           updatePositionDropdown(0, currentUpdateId !== null);
@@ -343,7 +435,7 @@
         sortedKeys.forEach((item, index) => {
           const div = document.createElement("div");
           div.classList.add("item");
-          
+
           if (item.isNew) {
             div.classList.add("new-key");
           }
@@ -384,7 +476,7 @@
         if (isUpdate) {
           const snapshot = await get(ref(db, id));
           const existingData = snapshot.val();
-          
+
           await set(ref(db, id), {
             device_id: id,
             key: key,
@@ -394,13 +486,13 @@
             order: existingData?.order || 999999,
             isNew: false
           });
-          
+
           alert("✅ Updated Successfully!");
           currentUpdateId = null;
         } else {
           const snapshot = await get(ref(db, "/"));
           const allData = snapshot.val() || {};
-          
+
           const sortedItems = Object.keys(allData)
             .map(itemId => ({
               id: itemId,
@@ -410,7 +502,7 @@
             .sort((a, b) => a.order - b.order);
 
           const targetIndex = insertPos - 1;
-          
+
           sortedItems.splice(targetIndex, 0, {
             id: id,
             device_id: id,
@@ -445,7 +537,7 @@
               });
             }
           }, 3000);
-          
+
           alert(`✅ New Key Added at Position #${insertPos}!`);
         }
 
@@ -454,7 +546,7 @@
         document.getElementById("expiry").value = "";
         document.getElementById("username").value = "";
         document.getElementById("allowOffline").checked = false;
-        
+
       } catch (error) {
         console.error("Error saving data:", error);
         alert("❌ Error: " + error.message);
@@ -465,10 +557,10 @@
       if (confirm("Delete this key?")) {
         try {
           await remove(ref(db, id));
-          
+
           const snapshot = await get(ref(db, "/"));
           const allData = snapshot.val() || {};
-          
+
           const sortedItems = Object.keys(allData)
             .map(itemId => ({
               id: itemId,
@@ -488,7 +580,7 @@
               isNew: false
             });
           }
-          
+
           alert("🗑 Deleted successfully!");
         } catch (error) {
           console.error("Error deleting:", error);
@@ -500,22 +592,22 @@
     window.updateItem = async (id) => {
       currentUpdateId = id;
       const dbRef = ref(db, id);
-      
+
       try {
         const snapshot = await get(dbRef);
         const item = snapshot.val();
-        
+
         if (item) {
           document.getElementById("deviceId").value = item.device_id;
           document.getElementById("key").value = item.key;
           document.getElementById("expiry").value = item.expirydate;
           document.getElementById("username").value = item.user;
           document.getElementById("allowOffline").checked = item.Allowoffline;
-          
+
           const allSnapshot = await get(ref(db, "/"));
           const allData = allSnapshot.val() || {};
           updatePositionDropdown(Object.keys(allData).length, true);
-          
+
           window.scrollTo(0, 0);
         }
       } catch (error) {
