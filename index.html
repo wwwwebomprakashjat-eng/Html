@@ -165,6 +165,7 @@
           <input type="text" id="deviceId" placeholder="Device ID">
           <input type="text" id="key" placeholder="Key">
           <input type="text" id="expiry" placeholder="Expiry (dd-mm-yyyy)">
+          <input type="text" id="username" placeholder="User name">
           <input type="number" id="position" placeholder="Insert Position (eg: 3)">
           <label><input type="checkbox" id="allowOffline"> Allow Offline</label>
         </div>
@@ -305,6 +306,12 @@
 
     set(rootRef, finalObj);
     alert("✅ Inserted Successfully!");
+deviceId.value = "";
+key.value = "";
+expiry.value = "";
+username.value = "";
+position.value = "";
+allowOffline.checked = false;
   }, { onlyOnce: true });
 });
 
@@ -316,7 +323,7 @@
     };
 
     window.updateItem = async (id) => {
-      const dbRef = ref(db, id);
+      const dbRef = ref(db, "keys/" + id);
       onValue(dbRef, (snapshot) => {
         const item = snapshot.val();
         if (item) {
