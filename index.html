@@ -66,7 +66,7 @@
       margin-top: 0;
       color: #ffc107;
     }
-    input, button {
+    input, button, select {
       padding: 10px;
       margin: 8px 6px;
       border-radius: 8px;
@@ -74,14 +74,14 @@
       font-size: 15px;
       transition: all 0.2s ease;
     }
-    input {
+    input, select {
       width: calc(25% - 12px);
       background: #2d2d2d;
       color: #fff;
       border: 1px solid #444;
       outline: none;
     }
-    input:focus {
+    input:focus, select:focus {
       background: #333;
       border-color: #ffc107;
       box-shadow: 0 0 8px #ffc10755;
@@ -101,6 +101,7 @@
       font-size: 1em;
     }
     button.save { background: #007bff; color: #fff; }
+    button.insert { background: #9c27b0; color: #fff; }
     button.update { background: #43a047; color: #fff; }
     button.danger { background: #e53935; color: #fff; }
     .grid {
@@ -115,9 +116,21 @@
       border: 1px solid #333;
       text-align: left;
       transition: background 0.3s ease;
+      position: relative;
     }
     .item:hover {
       background: #2e2e2e;
+    }
+    .item-number {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: #ffc107;
+      color: #111;
+      padding: 4px 10px;
+      border-radius: 15px;
+      font-weight: 600;
+      font-size: 12px;
     }
     .item p {
       margin: 6px 0;
@@ -135,10 +148,21 @@
       margin-top: 10px;
       display: flex;
       justify-content: space-between;
+      gap: 5px;
+    }
+    .mode-selector {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+      align-items: center;
+    }
+    .mode-selector label {
+      color: #ffc107;
+      font-weight: 600;
     }
     @media (max-width: 768px) {
       header { flex-direction: column; text-align: center; }
-      input { width: 100%; margin: 8px 0; }
+      input, select { width: 100%; margin: 8px 0; }
     }
   </style>
 </head>
@@ -161,28 +185,34 @@
     <div id="mainPanel" style="display:none;">
       <div class="card">
         <h3>➕ Add / Update License Key</h3>
+        <div class="mode-selector">
+          <label>Mode:</label>
+          <label><input type="radio" name="mode" value="add" checked> Add at End</label>
+          <label><input type="radio" name="mode" value="insert"> Insert at Position</label>
+        </div>
         <div>
           <input type="text" id="deviceId" placeholder="Device ID">
           <input type="text" id="key" placeholder="Key">
           <input type="text" id="expiry" placeholder="Expiry (dd-mm-yyyy)">
           <input type="text" id="username" placeholder="User name">
+          <input type="number" id="position" placeholder="Position (for insert)" min="1" style="display:none;">
           <label><input type="checkbox" id="allowOffline"> Allow Offline</label>
         </div>
-        <button id="saveBtn" class="save">💾 Save / Update</button>
+        <button id="saveBtn" class="save">💾 Add at End</button>
+        <button id="insertBtn" class="insert" style="display:none;">📍 Insert at Position</button>
       </div>
 
       <div class="card">
-        <h3>📜 Active Keys (Realtime)</h3>
+        <h3>📜 Active Keys (Realtime) - Total: <span id="totalCount">0</span></h3>
         <div id="dataList" class="grid"></div>
       </div>
     </div>
   </main>
   <footer>© 2025 NMMS Tools | Admin Panel</footer>
 
-  <!-- Firebase Script -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-    import { getDatabase, ref, onValue, set, remove } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-database.js";
+    import { getDatabase, ref, onValue, set, remove, get } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-database.js";
     import { getAuth, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 
     const firebaseConfig = {
@@ -209,6 +239,25 @@
     const adminInfo = document.getElementById("adminInfo");
     const adminEmailSpan = document.getElementById("adminEmail");
     const logoutBtn = document.getElementById("logoutBtn");
+    const saveBtn = document.getElementById("saveBtn");
+    const insertBtn = document.getElementById("insertBtn");
+    const positionInput = document.getElementById("position");
+    const totalCount = document.getElementById("totalCount");
+
+    // Mode selector
+    document.querySelectorAll('input[name="mode"]').forEach(radio => {
+      radio.addEventListener('change', (e) => {
+        if (e.target.value === 'insert') {
+          saveBtn.style.display = 'none';
+          insertBtn.style.display = 'inline-block';
+          positionInput.style.display = 'inline-block';
+        } else {
+          saveBtn.style.display = 'inline-block';
+          insertBtn.style.display = 'none';
+          positionInput.style.display = 'none';
+        }
+      });
+    });
 
     loginBtn.addEventListener("click", async () => {
       try {
@@ -239,34 +288,42 @@
     });
 
     function loadData() {
-      onValue(ref(db, "/"), (snapshot) => {
+      onValue(ref(db, "keys"), (snapshot) => {
         const data = snapshot.val();
         dataList.innerHTML = "";
         if (!data) {
           dataList.innerHTML = "<p>No keys found.</p>";
+          totalCount.textContent = "0";
           return;
         }
-        Object.keys(data).forEach((id) => {
-          const item = data[id];
-          const div = document.createElement("div");
-          div.classList.add("item");
-          div.innerHTML = `
-            <p><b>Device:</b> ${item.device_id}</p>
-            <p><b>User:</b> ${item.user}</p>
-            <p><b>Key:</b> ${item.key}</p>
-            <p><b>Expiry:</b> ${item.expirydate}</p>
-            <p><b>Offline:</b> ${item.Allowoffline}</p>
-            <div class="btn-group">
-              <button class="update" onclick="updateItem('${id}')">✏️ Update</button>
-              <button class="danger" onclick="deleteItem('${id}')">🗑 Delete</button>
-            </div>
-          `;
-          dataList.appendChild(div);
+        
+        const keysArray = Array.isArray(data) ? data : [];
+        totalCount.textContent = keysArray.length;
+        
+        keysArray.forEach((item, index) => {
+          if (item) {
+            const div = document.createElement("div");
+            div.classList.add("item");
+            div.innerHTML = `
+              <span class="item-number">#${index + 1}</span>
+              <p><b>Device:</b> ${item.device_id}</p>
+              <p><b>User:</b> ${item.user}</p>
+              <p><b>Key:</b> ${item.key}</p>
+              <p><b>Expiry:</b> ${item.expirydate}</p>
+              <p><b>Offline:</b> ${item.Allowoffline}</p>
+              <div class="btn-group">
+                <button class="update" onclick="updateItem(${index})">✏️ Update</button>
+                <button class="danger" onclick="deleteItem(${index})">🗑 Delete</button>
+              </div>
+            `;
+            dataList.appendChild(div);
+          }
         });
       });
     }
 
-    document.getElementById("saveBtn").addEventListener("click", async () => {
+    // Add at end
+    saveBtn.addEventListener("click", async () => {
       const id = document.getElementById("deviceId").value.trim();
       const key = document.getElementById("key").value.trim();
       const expiry = document.getElementById("expiry").value.trim();
@@ -278,7 +335,11 @@
         return;
       }
 
-      await set(ref(db, id), {
+      const snapshot = await get(ref(db, "keys"));
+      const data = snapshot.val();
+      const keysArray = Array.isArray(data) ? data : [];
+
+      keysArray.push({
         device_id: id,
         key: key,
         expirydate: expiry,
@@ -286,35 +347,94 @@
         Allowoffline: allow
       });
 
-      alert("✅ Saved / Updated Successfully!");
+      await set(ref(db, "keys"), keysArray);
+      alert("✅ Added Successfully at End!");
+      clearForm();
+    });
+
+    // Insert at position
+    insertBtn.addEventListener("click", async () => {
+      const id = document.getElementById("deviceId").value.trim();
+      const key = document.getElementById("key").value.trim();
+      const expiry = document.getElementById("expiry").value.trim();
+      const user = document.getElementById("username").value.trim();
+      const allow = document.getElementById("allowOffline").checked;
+      const position = parseInt(document.getElementById("position").value);
+
+      if (!id || !key || !expiry || !user) {
+        alert("⚠️ Please fill all fields!");
+        return;
+      }
+
+      if (!position || position < 1) {
+        alert("⚠️ Please enter valid position (1 or greater)!");
+        return;
+      }
+
+      const snapshot = await get(ref(db, "keys"));
+      const data = snapshot.val();
+      const keysArray = Array.isArray(data) ? data : [];
+
+      const newKey = {
+        device_id: id,
+        key: key,
+        expirydate: expiry,
+        user: user,
+        Allowoffline: allow
+      };
+
+      // Insert at position (position-1 because array is 0-indexed)
+      const insertIndex = Math.min(position - 1, keysArray.length);
+      keysArray.splice(insertIndex, 0, newKey);
+
+      await set(ref(db, "keys"), keysArray);
+      alert(`✅ Inserted Successfully at Position ${position}!`);
+      clearForm();
+    });
+
+    window.deleteItem = async (index) => {
+      if (confirm(`Delete key at position ${index + 1}?`)) {
+        const snapshot = await get(ref(db, "keys"));
+        const data = snapshot.val();
+        const keysArray = Array.isArray(data) ? data : [];
+        
+        keysArray.splice(index, 1);
+        await set(ref(db, "keys"), keysArray);
+        alert("🗑 Deleted successfully!");
+      }
+    };
+
+    window.updateItem = async (index) => {
+      const snapshot = await get(ref(db, "keys"));
+      const data = snapshot.val();
+      const keysArray = Array.isArray(data) ? data : [];
+      const item = keysArray[index];
+      
+      if (item) {
+        document.getElementById("deviceId").value = item.device_id;
+        document.getElementById("key").value = item.key;
+        document.getElementById("expiry").value = item.expirydate;
+        document.getElementById("username").value = item.user;
+        document.getElementById("allowOffline").checked = item.Allowoffline;
+        
+        // Delete old entry first, then can re-add
+        if (confirm(`Update key at position ${index + 1}? (It will be deleted and you can re-add)`)) {
+          keysArray.splice(index, 1);
+          await set(ref(db, "keys"), keysArray);
+        }
+        
+        window.scrollTo(0, 0);
+      }
+    };
+
+    function clearForm() {
       document.getElementById("deviceId").value = "";
       document.getElementById("key").value = "";
       document.getElementById("expiry").value = "";
       document.getElementById("username").value = "";
       document.getElementById("allowOffline").checked = false;
-    });
-
-    window.deleteItem = async (id) => {
-      if (confirm("Delete this key?")) {
-        await remove(ref(db, id));
-        alert("🗑 Deleted successfully!");
-      }
-    };
-
-    window.updateItem = async (id) => {
-      const dbRef = ref(db, id);
-      onValue(dbRef, (snapshot) => {
-        const item = snapshot.val();
-        if (item) {
-          document.getElementById("deviceId").value = item.device_id;
-          document.getElementById("key").value = item.key;
-          document.getElementById("expiry").value = item.expirydate;
-          document.getElementById("username").value = item.user;
-          document.getElementById("allowOffline").checked = item.Allowoffline;
-          window.scrollTo(0, 0);
-        }
-      }, { onlyOnce: true });
-    };
+      document.getElementById("position").value = "";
+    }
   </script>
 </body>
 </html>
