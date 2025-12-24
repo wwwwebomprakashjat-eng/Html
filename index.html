@@ -325,7 +325,12 @@
     const auth = getAuth(app);
     const provider = new GoogleAuthProvider();
 
-    const ADMIN_EMAIL = "www.webomprakashjat@gmail.com";
+    // Multiple admin emails allowed
+    const ADMIN_EMAILS = [
+      "www.webomprakashjat@gmail.com",
+      "rambirma248@gmail.com"
+    ];
+
     let currentUpdateId = null;
     let totalKeys = 0;
 
@@ -351,7 +356,8 @@
         const result = await signInWithPopup(auth, provider);
         const user = result.user;
 
-        if (user.email !== ADMIN_EMAIL) {
+        // Check if user email is in the allowed admin emails list
+        if (!ADMIN_EMAILS.includes(user.email)) {
           // Show modal instead of alert
           accessDeniedModal.style.display = "block";
           
