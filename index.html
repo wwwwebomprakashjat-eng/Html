@@ -171,6 +171,11 @@
       margin-right: 10px;
       font-weight: 600;
     }
+    #positionInfo {
+      color: #aaa;
+      font-size: 0.85em;
+      margin-left: 10px;
+    }
     @media (max-width: 768px) {
       header { flex-direction: column; text-align: center; }
       input, select { width: 100%; margin: 8px 0; }
@@ -205,18 +210,8 @@
         </div>
         <div class="position-selector">
           <label>📍 Insert Position:</label>
-          <select id="insertPosition">
-            <option value="1">1st Position (Top)</option>
-            <option value="2">2nd Position</option>
-            <option value="3" selected>3rd Position</option>
-            <option value="4">4th Position</option>
-            <option value="5">5th Position</option>
-            <option value="6">6th Position</option>
-            <option value="7">7th Position</option>
-            <option value="8">8th Position</option>
-            <option value="9">9th Position</option>
-            <option value="10">10th Position</option>
-          </select>
+          <select id="insertPosition"></select>
+          <span id="positionInfo"></span>
         </div>
         <button id="saveBtn" class="save">💾 Save / Update</button>
       </div>
@@ -252,6 +247,7 @@
 
     const ADMIN_EMAIL = "www.webomprakashjat@gmail.com";
     let currentUpdateId = null;
+    let totalKeys = 0;
 
     const loginBtn = document.getElementById("loginBtn");
     const loginSection = document.getElementById("loginSection");
@@ -260,6 +256,8 @@
     const adminInfo = document.getElementById("adminInfo");
     const adminEmailSpan = document.getElementById("adminEmail");
     const logoutBtn = document.getElementById("logoutBtn");
+    const insertPosition = document.getElementById("insertPosition");
+    const positionInfo = document.getElementById("positionInfo");
 
     loginBtn.addEventListener("click", async () => {
       try {
@@ -289,16 +287,49 @@
       location.reload();
     });
 
+    function updatePositionDropdown(keysCount, isUpdate = false) {
+      insertPosition.innerHTML = "";
+      totalKeys = keysCount;
+      
+      const maxPosition = isUpdate ? keysCount : keysCount + 1;
+      
+      for (let i = 1; i <= maxPosition; i++) {
+        const option = document.createElement("option");
+        option.value = i;
+        option.textContent = `${i}${getOrdinalSuffix(i)} Position`;
+        insertPosition.appendChild(option);
+      }
+      
+      // Set default to 3rd position if available
+      if (maxPosition >= 3) {
+        insertPosition.value = "3";
+      } else {
+        insertPosition.value = maxPosition;
+      }
+      
+      positionInfo.textContent = isUpdate ? `(Total ${keysCount} keys)` : `(Will be ${keysCount + 1} keys after adding)`;
+    }
+
+    function getOrdinalSuffix(num) {
+      const j = num % 10;
+      const k = num % 100;
+      if (j === 1 && k !== 11) return "st";
+      if (j === 2 && k !== 12) return "nd";
+      if (j === 3 && k !== 13) return "rd";
+      return "th";
+    }
+
     function loadData() {
       onValue(ref(db, "/"), (snapshot) => {
         const data = snapshot.val();
         dataList.innerHTML = "";
+        
         if (!data) {
           dataList.innerHTML = "<p>No keys found.</p>";
+          updatePositionDropdown(0, currentUpdateId !== null);
           return;
         }
 
-        // Convert object to array and sort by order
         const sortedKeys = Object.keys(data)
           .map(id => ({
             id,
@@ -307,11 +338,12 @@
           }))
           .sort((a, b) => a.order - b.order);
 
+        updatePositionDropdown(sortedKeys.length, currentUpdateId !== null);
+
         sortedKeys.forEach((item, index) => {
           const div = document.createElement("div");
           div.classList.add("item");
           
-          // Highlight if it's a recently added key
           if (item.isNew) {
             div.classList.add("new-key");
           }
@@ -339,146 +371,157 @@
       const expiry = document.getElementById("expiry").value.trim();
       const user = document.getElementById("username").value.trim();
       const allow = document.getElementById("allowOffline").checked;
-      const insertPosition = parseInt(document.getElementById("insertPosition").value);
+      const insertPos = parseInt(document.getElementById("insertPosition").value);
 
       if (!id || !key || !expiry || !user) {
         alert("⚠️ Please fill all fields!");
         return;
       }
 
-      // Check if this is an update operation
-      const isUpdate = currentUpdateId && currentUpdateId === id;
+      try {
+        const isUpdate = currentUpdateId && currentUpdateId === id;
 
-      if (isUpdate) {
-        // For updates, keep the existing order
-        const snapshot = await get(ref(db, id));
-        const existingData = snapshot.val();
-        
-        await set(ref(db, id), {
-          device_id: id,
-          key: key,
-          expirydate: expiry,
-          user: user,
-          Allowoffline: allow,
-          order: existingData?.order || 999999,
-          isNew: false
-        });
-        
-        alert("✅ Updated Successfully!");
-        currentUpdateId = null;
-      } else {
-        // For new entries, reorder all items
-        const snapshot = await get(ref(db, "/"));
-        const allData = snapshot.val() || {};
-        
-        // Convert to array and sort by current order
-        const sortedItems = Object.keys(allData)
-          .map(itemId => ({
-            id: itemId,
-            ...allData[itemId],
-            order: allData[itemId].order || 999999
-          }))
-          .sort((a, b) => a.order - b.order);
+        if (isUpdate) {
+          const snapshot = await get(ref(db, id));
+          const existingData = snapshot.val();
+          
+          await set(ref(db, id), {
+            device_id: id,
+            key: key,
+            expirydate: expiry,
+            user: user,
+            Allowoffline: allow,
+            order: existingData?.order || 999999,
+            isNew: false
+          });
+          
+          alert("✅ Updated Successfully!");
+          currentUpdateId = null;
+        } else {
+          const snapshot = await get(ref(db, "/"));
+          const allData = snapshot.val() || {};
+          
+          const sortedItems = Object.keys(allData)
+            .map(itemId => ({
+              id: itemId,
+              ...allData[itemId],
+              order: allData[itemId].order || 999999
+            }))
+            .sort((a, b) => a.order - b.order);
 
-        // Calculate new order value for the new key
-        const targetIndex = insertPosition - 1; // Convert to 0-based index
-        
-        // Insert new item at the specified position
-        sortedItems.splice(targetIndex, 0, {
-          id: id,
-          device_id: id,
-          key: key,
-          expirydate: expiry,
-          user: user,
-          Allowoffline: allow,
-          isNew: true,
-          order: 0 // Will be recalculated
-        });
+          const targetIndex = insertPos - 1;
+          
+          sortedItems.splice(targetIndex, 0, {
+            id: id,
+            device_id: id,
+            key: key,
+            expirydate: expiry,
+            user: user,
+            Allowoffline: allow,
+            isNew: true,
+            order: 0
+          });
 
-        // Reassign order values to all items
-        const updates = {};
-        sortedItems.forEach((item, index) => {
-          updates[item.id] = {
-            device_id: item.device_id,
-            key: item.key,
-            expirydate: item.expirydate,
-            user: item.user,
-            Allowoffline: item.Allowoffline,
-            order: index + 1,
-            isNew: item.id === id ? true : false
-          };
-        });
-
-        // Save all updates
-        for (const [itemId, itemData] of Object.entries(updates)) {
-          await set(ref(db, itemId), itemData);
-        }
-
-        // Clear isNew flag after 3 seconds
-        setTimeout(async () => {
-          const currentSnapshot = await get(ref(db, id));
-          if (currentSnapshot.exists()) {
-            const currentData = currentSnapshot.val();
-            await set(ref(db, id), {
-              ...currentData,
-              isNew: false
+          for (let i = 0; i < sortedItems.length; i++) {
+            const item = sortedItems[i];
+            await set(ref(db, item.id), {
+              device_id: item.device_id,
+              key: item.key,
+              expirydate: item.expirydate,
+              user: item.user,
+              Allowoffline: item.Allowoffline,
+              order: i + 1,
+              isNew: item.id === id ? true : false
             });
           }
-        }, 3000);
-        
-        alert(`✅ New Key Added at Position #${insertPosition}!`);
-      }
 
-      // Clear form
-      document.getElementById("deviceId").value = "";
-      document.getElementById("key").value = "";
-      document.getElementById("expiry").value = "";
-      document.getElementById("username").value = "";
-      document.getElementById("allowOffline").checked = false;
-      document.getElementById("insertPosition").value = "3";
+          setTimeout(async () => {
+            const currentSnapshot = await get(ref(db, id));
+            if (currentSnapshot.exists()) {
+              const currentData = currentSnapshot.val();
+              await set(ref(db, id), {
+                ...currentData,
+                isNew: false
+              });
+            }
+          }, 3000);
+          
+          alert(`✅ New Key Added at Position #${insertPos}!`);
+        }
+
+        document.getElementById("deviceId").value = "";
+        document.getElementById("key").value = "";
+        document.getElementById("expiry").value = "";
+        document.getElementById("username").value = "";
+        document.getElementById("allowOffline").checked = false;
+        
+      } catch (error) {
+        console.error("Error saving data:", error);
+        alert("❌ Error: " + error.message);
+      }
     });
 
     window.deleteItem = async (id) => {
       if (confirm("Delete this key?")) {
-        await remove(ref(db, id));
-        
-        // Reorder remaining items
-        const snapshot = await get(ref(db, "/"));
-        const allData = snapshot.val() || {};
-        
-        const sortedItems = Object.keys(allData)
-          .map(itemId => ({
-            id: itemId,
-            ...allData[itemId]
-          }))
-          .sort((a, b) => (a.order || 999999) - (b.order || 999999));
+        try {
+          await remove(ref(db, id));
+          
+          const snapshot = await get(ref(db, "/"));
+          const allData = snapshot.val() || {};
+          
+          const sortedItems = Object.keys(allData)
+            .map(itemId => ({
+              id: itemId,
+              ...allData[itemId]
+            }))
+            .sort((a, b) => (a.order || 999999) - (b.order || 999999));
 
-        // Reassign order
-        for (let i = 0; i < sortedItems.length; i++) {
-          await set(ref(db, sortedItems[i].id), {
-            ...sortedItems[i],
-            order: i + 1
-          });
+          for (let i = 0; i < sortedItems.length; i++) {
+            const item = sortedItems[i];
+            await set(ref(db, item.id), {
+              device_id: item.device_id,
+              key: item.key,
+              expirydate: item.expirydate,
+              user: item.user,
+              Allowoffline: item.Allowoffline,
+              order: i + 1,
+              isNew: false
+            });
+          }
+          
+          alert("🗑 Deleted successfully!");
+        } catch (error) {
+          console.error("Error deleting:", error);
+          alert("❌ Error: " + error.message);
         }
-        
-        alert("🗑 Deleted successfully!");
       }
     };
 
     window.updateItem = async (id) => {
       currentUpdateId = id;
       const dbRef = ref(db, id);
-      onValue(dbRef, (snapshot) => {
+      
+      try {
+        const snapshot = await get(dbRef);
         const item = snapshot.val();
+        
         if (item) {
           document.getElementById("deviceId").value = item.device_id;
           document.getElementById("key").value = item.key;
           document.getElementById("expiry").value = item.expirydate;
           document.getElementById("username").value = item.user;
           document.getElementById("allowOffline").checked = item.Allowoffline;
+          
+          const allSnapshot = await get(ref(db, "/"));
+          const allData = allSnapshot.val() || {};
+          updatePositionDropdown(Object.keys(allData).length, true);
+          
           window.scrollTo(0, 0);
         }
-      }, { onlyOnce: true });
+      } catch (error) {
+        console.error("Error loading item:", error);
+        alert("❌ Error: " + error.message);
+      }
     };
   </script>
 </body>
