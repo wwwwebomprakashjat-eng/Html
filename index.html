@@ -23,115 +23,55 @@
       border-bottom: 1px solid #333;
       box-shadow: 0 0 10px rgba(255,255,255,0.1);
     }
-    header h1 {
-      margin: 0;
-      color: #ffc107;
-      font-size: 1.5em;
-    }
-    .admin-info {
-      font-size: 0.9em;
-      color: #ddd;
-    }
-    .admin-info span {
-      color: #ffc107;
-    }
+    header h1 { margin: 0; color: #ffc107; font-size: 1.5em; }
+    .admin-info { font-size: 0.9em; color: #ddd; }
+    .admin-info span { color: #ffc107; }
     .logout-btn {
-      background: #e53935;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      padding: 6px 12px;
-      font-weight: 600;
-      cursor: pointer;
-      margin-left: 10px;
+      background: #e53935; color: white; border: none; border-radius: 6px;
+      padding: 6px 12px; font-weight: 600; cursor: pointer; margin-left: 10px;
     }
-    main {
-      max-width: 1100px;
-      margin: 30px auto;
-      padding: 20px;
-    }
+    main { max-width: 1100px; margin: 30px auto; padding: 20px; }
     .card {
-      background: #1e1e1e;
-      border-radius: 15px;
-      padding: 20px;
+      background: #1e1e1e; border-radius: 15px; padding: 20px;
       box-shadow: 0 0 20px rgba(0,0,0,0.5);
       margin-bottom: 25px;
       transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
-    .card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 0 25px rgba(255,255,255,0.08);
-    }
-    .card h3 {
-      margin-top: 0;
-      color: #ffc107;
-    }
+    .card:hover { transform: translateY(-3px); box-shadow: 0 0 25px rgba(255,255,255,0.08); }
+    .card h3 { margin-top: 0; color: #ffc107; }
+
     input, button {
-      padding: 10px;
-      margin: 8px 6px;
-      border-radius: 8px;
-      border: none;
-      font-size: 15px;
+      padding: 10px; margin: 8px 6px;
+      border-radius: 8px; border: none; font-size: 15px;
       transition: all 0.2s ease;
     }
     input {
       width: calc(25% - 12px);
-      background: #2d2d2d;
-      color: #fff;
-      border: 1px solid #444;
-      outline: none;
+      background: #2d2d2d; color: #fff;
+      border: 1px solid #444; outline: none;
     }
-    input:focus {
-      background: #333;
-      border-color: #ffc107;
-      box-shadow: 0 0 8px #ffc10755;
-    }
+    input:focus { background: #333; border-color: #ffc107; box-shadow: 0 0 8px #ffc10755; }
     input::placeholder { color: #aaa; }
-    button {
-      cursor: pointer;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-    }
-    button#loginBtn {
-      background: #ffc107;
-      color: #111;
-      padding: 12px 18px;
-      font-size: 1em;
-    }
+
+    button { cursor: pointer; font-weight: 600; letter-spacing: 0.5px; }
+    button#loginBtn { background: #ffc107; color: #111; padding: 12px 18px; font-size: 1em; }
     button.save { background: #007bff; color: #fff; }
     button.update { background: #43a047; color: #fff; }
     button.danger { background: #e53935; color: #fff; }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-      gap: 15px;
-    }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 15px; }
     .item {
-      background: #252525;
-      padding: 15px;
-      border-radius: 10px;
-      border: 1px solid #333;
-      text-align: left;
-      transition: background 0.3s ease;
+      background: #252525; padding: 15px; border-radius: 10px; border: 1px solid #333;
+      text-align: left; transition: background 0.3s ease;
     }
     .item:hover { background: #2e2e2e; }
-    .item p {
-      margin: 6px 0;
-      font-size: 14px;
-      color: #ddd;
-    }
+    .item p { margin: 6px 0; font-size: 14px; color: #ddd; }
     .item b { color: #ffc107; }
-    footer {
-      text-align: center;
-      color: #888;
-      padding: 10px;
-      font-size: 0.9em;
-    }
-    .btn-group {
-      margin-top: 10px;
-      display: flex;
-      justify-content: space-between;
-    }
+
+    footer { text-align: center; color: #888; padding: 10px; font-size: 0.9em; }
+    .btn-group { margin-top: 10px; display: flex; justify-content: space-between; gap: 10px; }
+    .btn-group button { flex: 1; }
+
     @media (max-width: 768px) {
       header { flex-direction: column; text-align: center; }
       input { width: 100%; margin: 8px 0; }
@@ -163,7 +103,9 @@
           <input type="text" id="key" placeholder="Key">
           <input type="text" id="expiry" placeholder="Expiry (dd-mm-yyyy)">
           <input type="text" id="username" placeholder="User name">
-          <label><input type="checkbox" id="allowOffline"> Allow Offline</label>
+          <label style="display:inline-block;margin:8px 6px;">
+            <input type="checkbox" id="allowOffline"> Allow Offline
+          </label>
         </div>
         <button id="saveBtn" class="save">💾 Save / Update</button>
       </div>
@@ -183,7 +125,13 @@
       getDatabase, ref, onValue, set, remove,
       query, orderByChild
     } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-database.js";
-    import { getAuth, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+    import {
+      getAuth, signInWithPopup, GoogleAuthProvider, signOut
+    } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+
+    // Debug helpers (optional but useful)
+    window.addEventListener("error", (e) => alert("JS Error: " + e.message));
+    window.addEventListener("unhandledrejection", (e) => alert("Promise Error: " + (e.reason?.message || e.reason)));
 
     const firebaseConfig = {
       apiKey: "AIzaSyA1FIDLD-AKVlEz-AJiweYVdxhIP0Rnijk",
@@ -202,42 +150,21 @@
 
     const ADMIN_EMAIL = "www.webomprakashjat@gmail.com";
 
-    const loginBtn = document.getElementById("loginBtn");
-    const loginSection = document.getElementById("loginSection");
-    const mainPanel = document.getElementById("mainPanel");
-    const dataList = document.getElementById("dataList");
-    const adminInfo = document.getElementById("adminInfo");
-    const adminEmailSpan = document.getElementById("adminEmail");
-    const logoutBtn = document.getElementById("logoutBtn");
+    // Globals (for window.updateItem/deleteItem use)
+    let loginBtn, loginSection, mainPanel, dataList, adminInfo, adminEmailSpan, logoutBtn;
 
-    loginBtn.addEventListener("click", async () => {
-      try {
-        const result = await signInWithPopup(auth, provider);
-        const user = result.user;
+    function showPanel(userEmail) {
+      adminEmailSpan.textContent = userEmail || "";
+      adminInfo.style.display = "block";
+      loginSection.style.display = "none";
+      mainPanel.style.display = "block";
+    }
 
-        if (user.email !== ADMIN_EMAIL) {
-          alert("🚫 Access Denied!
-Only admin can log in.");
-          await signOut(auth);
-          location.reload();
-          return;
-        }
-
-        adminEmailSpan.textContent = user.email;
-        adminInfo.style.display = "block";
-        loginSection.style.display = "none";
-        mainPanel.style.display = "block";
-        loadData();
-      } catch (err) {
-        alert("❌ Login failed: " + err.message);
-      }
-    });
-
-    logoutBtn.addEventListener("click", async () => {
-      await signOut(auth);
-      alert("✅ Logged out successfully!");
-      location.reload();
-    });
+    function hidePanel() {
+      adminInfo.style.display = "none";
+      loginSection.style.display = "block";
+      mainPanel.style.display = "none";
+    }
 
     function renderList(items) {
       dataList.innerHTML = "";
@@ -266,22 +193,23 @@ Only admin can log in.");
     }
 
     function loadData() {
-      // Order by updatedAt so we can know which one is newest reliably
       const q = query(ref(db, "/"), orderByChild("updatedAt"));
 
       onValue(q, (snapshot) => {
         const items = [];
         snapshot.forEach((childSnap) => {
+          const v = childSnap.val() || {};
           items.push({
             id: childSnap.key,
-            ...childSnap.val()
+            ...v,
+            updatedAt: v.updatedAt || 0
           });
         });
 
-        // Asc -> newest last; reverse to get newest first
-        items.reverse();
+        // newest first
+        items.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
 
-        // newest ko 3rd (index 2) position par fix karo
+        // newest ko 3rd (index 2) par fix
         if (items.length > 0) {
           const newest = items.shift();
           const insertIndex = Math.min(2, items.length);
@@ -291,35 +219,6 @@ Only admin can log in.");
         renderList(items);
       });
     }
-
-    document.getElementById("saveBtn").addEventListener("click", async () => {
-      const id = document.getElementById("deviceId").value.trim();
-      const key = document.getElementById("key").value.trim();
-      const expiry = document.getElementById("expiry").value.trim();
-      const user = document.getElementById("username").value.trim();
-      const allow = document.getElementById("allowOffline").checked;
-
-      if (!id || !key || !expiry || !user) {
-        alert("⚠️ Please fill all fields!");
-        return;
-      }
-
-      await set(ref(db, id), {
-        device_id: id,
-        key: key,
-        expirydate: expiry,
-        user: user,
-        Allowoffline: allow,
-        updatedAt: Date.now()
-      });
-
-      alert("✅ Saved / Updated Successfully!");
-      document.getElementById("deviceId").value = "";
-      document.getElementById("key").value = "";
-      document.getElementById("expiry").value = "";
-      document.getElementById("username").value = "";
-      document.getElementById("allowOffline").checked = false;
-    });
 
     window.deleteItem = async (id) => {
       if (confirm("Delete this key?")) {
@@ -342,6 +241,81 @@ Only admin can log in.");
         }
       }, { onlyOnce: true });
     };
+
+    window.addEventListener("DOMContentLoaded", () => {
+      // Bind DOM
+      loginBtn = document.getElementById("loginBtn");
+      loginSection = document.getElementById("loginSection");
+      mainPanel = document.getElementById("mainPanel");
+      dataList = document.getElementById("dataList");
+      adminInfo = document.getElementById("adminInfo");
+      adminEmailSpan = document.getElementById("adminEmail");
+      logoutBtn = document.getElementById("logoutBtn");
+
+      // Safety check
+      if (!loginBtn) {
+        alert("loginBtn not found");
+        return;
+      }
+
+      loginBtn.addEventListener("click", async () => {
+        try {
+          const result = await signInWithPopup(auth, provider);
+          const user = result.user;
+
+          if ((user.email || "").toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+            alert("🚫 Access Denied!
+Only admin can log in.");
+            await signOut(auth);
+            location.reload();
+            return;
+          }
+
+          showPanel(user.email);
+          loadData();
+        } catch (err) {
+          alert("❌ Login failed: " + err.message);
+        }
+      });
+
+      logoutBtn.addEventListener("click", async () => {
+        await signOut(auth);
+        alert("✅ Logged out successfully!");
+        location.reload();
+      });
+
+      document.getElementById("saveBtn").addEventListener("click", async () => {
+        const id = document.getElementById("deviceId").value.trim();
+        const key = document.getElementById("key").value.trim();
+        const expiry = document.getElementById("expiry").value.trim();
+        const user = document.getElementById("username").value.trim();
+        const allow = document.getElementById("allowOffline").checked;
+
+        if (!id || !key || !expiry || !user) {
+          alert("⚠️ Please fill all fields!");
+          return;
+        }
+
+        await set(ref(db, id), {
+          device_id: id,
+          key: key,
+          expirydate: expiry,
+          user: user,
+          Allowoffline: allow,
+          updatedAt: Date.now()
+        });
+
+        alert("✅ Saved / Updated Successfully!");
+        document.getElementById("deviceId").value = "";
+        document.getElementById("key").value = "";
+        document.getElementById("expiry").value = "";
+        document.getElementById("username").value = "";
+        document.getElementById("allowOffline").checked = false;
+      });
+
+      // Initial UI state
+      hidePanel();
+    });
   </script>
 </body>
 </html>
