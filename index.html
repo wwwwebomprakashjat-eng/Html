@@ -155,11 +155,8 @@
       justify-content: space-between;
     }
     .item.new-key {
-      animation: highlight 1.5s ease;
-    }
-    @keyframes highlight {
-      0% { background: #ffc107; transform: scale(1.05); }
-      100% { background: #252525; transform: scale(1); }
+      box-shadow: 0 0 15px rgba(255, 193, 7, 0.4);
+      border: 1px solid #ffc107;
     }
     .position-selector {
       display: flex;
@@ -176,7 +173,7 @@
       font-size: 0.85em;
       margin-left: 10px;
     }
-    
+
     /* Modal Styles */
     .modal {
       display: none;
@@ -240,7 +237,7 @@
         opacity: 1;
       }
     }
-    
+
     @media (max-width: 768px) {
       header { flex-direction: column; text-align: center; }
       input, select { width: 100%; margin: 8px 0; }
@@ -273,13 +270,15 @@
         <div>
           <input type="text" id="deviceId" placeholder="Device ID">
           <input type="text" id="key" placeholder="Key">
-          <input type="text" id="expiry" placeholder="Expiry (dd-mm-yyyy)">
+          <input type="text" id="expiry" placeholder="Expiry (dd-mm-yyyy)" value="01-01-2026">
           <input type="text" id="username" placeholder="User name">
           <label><input type="checkbox" id="allowOffline"> Allow Offline</label>
         </div>
         <div class="position-selector">
           <label>📍 Insert Position:</label>
-          <select id="insertPosition"></select>
+          <select id="insertPosition">
+            <option value="">-- Select Position --</option>
+          </select>
           <span id="positionInfo"></span>
         </div>
         <button id="saveBtn" class="save">💾 Save / Update</button>
@@ -361,7 +360,7 @@
         if (!ADMIN_EMAILS.includes(user.email)) {
           // Show modal instead of alert
           accessDeniedModal.style.display = "block";
-          
+
           // Sign out the unauthorized user
           await signOut(auth);
           return;
@@ -387,8 +386,8 @@
       location.reload();
     });
 
-    function updatePositionDropdown(keysCount, isUpdate = false) {
-      insertPosition.innerHTML = "";
+    function updatePositionDropdown(keysCount, isUpdate = false, currentPosition = null) {
+      insertPosition.innerHTML = '<option value="">-- Select Position --</option>';
       totalKeys = keysCount;
 
       const maxPosition = isUpdate ? keysCount : keysCount + 1;
@@ -400,10 +399,11 @@
         insertPosition.appendChild(option);
       }
 
-      if (maxPosition >= 3) {
-        insertPosition.value = "3";
+      // Set current position if updating
+      if (isUpdate && currentPosition !== null) {
+        insertPosition.value = currentPosition;
       } else {
-        insertPosition.value = maxPosition;
+        insertPosition.value = ""; // No default selection for new keys
       }
 
       positionInfo.textContent = isUpdate ? `(Total ${keysCount} keys)` : `(Will be ${keysCount + 1} keys after adding)`;
@@ -455,7 +455,7 @@
             <p><b>Expiry:</b> ${item.expirydate}</p>
             <p><b>Offline:</b> ${item.Allowoffline}</p>
             <div class="btn-group">
-              <button class="update" onclick="updateItem('${item.id}')">✏️ Update</button>
+              <button class="update" onclick="updateItem('${item.id}', ${index + 1})">✏️ Update</button>
               <button class="danger" onclick="deleteItem('${item.id}')">🗑 Delete</button>
             </div>
           `;
@@ -477,6 +477,11 @@
         return;
       }
 
+      if (!insertPos || insertPos < 1) {
+        alert("⚠️ Please select a position!");
+        return;
+      }
+
       try {
         const isUpdate = currentUpdateId && currentUpdateId === id;
 
@@ -484,15 +489,72 @@
           const snapshot = await get(ref(db, id));
           const existingData = snapshot.val();
 
-          await set(ref(db, id), {
-            device_id: id,
-            key: key,
-            expirydate: expiry,
-            user: user,
-            Allowoffline: allow,
-            order: existingData?.order || 999999,
-            isNew: false
-          });
+          // Check if position changed
+          const snapshot2 = await get(ref(db, "/"));
+          const allData = snapshot2.val() || {};
+          const sortedItems = Object.keys(allData)
+            .map(itemId => ({
+              id: itemId,
+              ...allData[itemId],
+              order: allData[itemId].order || 999999
+            }))
+            .sort((a, b) => a.order - b.order);
+
+          // Find current position
+          const currentPos = sortedItems.findIndex(item => item.id === id) + 1;
+
+          if (currentPos !== insertPos) {
+            // Position changed, need to reorder
+            // Remove from current position
+            const itemToMove = sortedItems.find(item => item.id === id);
+            sortedItems.splice(currentPos - 1, 1);
+
+            // Update item data
+            itemToMove.device_id = id;
+            itemToMove.key = key;
+            itemToMove.expirydate = expiry;
+            itemToMove.user = user;
+            itemToMove.Allowoffline = allow;
+
+            // Insert at new position
+            sortedItems.splice(insertPos - 1, 0, itemToMove);
+
+            // Save all with new order
+            for (let i = 0; i < sortedItems.length; i++) {
+              const item = sortedItems[i];
+              await set(ref(db, item.id), {
+                device_id: item.device_id,
+                key: item.key,
+                expirydate: item.expirydate,
+                user: item.user,
+                Allowoffline: item.Allowoffline,
+                order: i + 1,
+                isNew: item.id === id ? true : false
+              });
+            }
+          } else {
+            // Only data updated, position same
+            await set(ref(db, id), {
+              device_id: id,
+              key: key,
+              expirydate: expiry,
+              user: user,
+              Allowoffline: allow,
+              order: existingData?.order || 999999,
+              isNew: true
+            });
+          }
+
+          setTimeout(async () => {
+            const currentSnapshot = await get(ref(db, id));
+            if (currentSnapshot.exists()) {
+              const currentData = currentSnapshot.val();
+              await set(ref(db, id), {
+                ...currentData,
+                isNew: false
+              });
+            }
+          }, 5000);
 
           alert("✅ Updated Successfully!");
           currentUpdateId = null;
@@ -543,16 +605,17 @@
                 isNew: false
               });
             }
-          }, 3000);
+          }, 5000);
 
           alert(`✅ New Key Added at Position #${insertPos}!`);
         }
 
         document.getElementById("deviceId").value = "";
         document.getElementById("key").value = "";
-        document.getElementById("expiry").value = "";
+        document.getElementById("expiry").value = "01-01-2026";
         document.getElementById("username").value = "";
         document.getElementById("allowOffline").checked = false;
+        document.getElementById("insertPosition").value = "";
 
       } catch (error) {
         console.error("Error saving data:", error);
@@ -596,7 +659,7 @@
       }
     };
 
-    window.updateItem = async (id) => {
+    window.updateItem = async (id, currentPos) => {
       currentUpdateId = id;
       const dbRef = ref(db, id);
 
@@ -613,7 +676,7 @@
 
           const allSnapshot = await get(ref(db, "/"));
           const allData = allSnapshot.val() || {};
-          updatePositionDropdown(Object.keys(allData).length, true);
+          updatePositionDropdown(Object.keys(allData).length, true, currentPos);
 
           window.scrollTo(0, 0);
         }
