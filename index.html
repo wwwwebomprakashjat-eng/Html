@@ -86,9 +86,7 @@
       border-color: #ffc107;
       box-shadow: 0 0 8px #ffc10755;
     }
-    input::placeholder {
-      color: #aaa;
-    }
+    input::placeholder { color: #aaa; }
     button {
       cursor: pointer;
       font-weight: 600;
@@ -116,9 +114,7 @@
       text-align: left;
       transition: background 0.3s ease;
     }
-    .item:hover {
-      background: #2e2e2e;
-    }
+    .item:hover { background: #2e2e2e; }
     .item p {
       margin: 6px 0;
       font-size: 14px;
@@ -142,6 +138,7 @@
     }
   </style>
 </head>
+
 <body>
   <header>
     <h1>🔥 NMMS Admin Panel</h1>
@@ -177,12 +174,15 @@
       </div>
     </div>
   </main>
+
   <footer>© 2025 NMMS Tools | Admin Panel</footer>
 
-  <!-- Firebase Script -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-    import { getDatabase, ref, onValue, set, remove } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-database.js";
+    import {
+      getDatabase, ref, onValue, set, remove,
+      query, orderByChild
+    } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-database.js";
     import { getAuth, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 
     const firebaseConfig = {
@@ -216,7 +216,8 @@
         const user = result.user;
 
         if (user.email !== ADMIN_EMAIL) {
-          alert("🚫 Access Denied!\nOnly admin can log in.");
+          alert("🚫 Access Denied!
+Only admin can log in.");
           await signOut(auth);
           location.reload();
           return;
@@ -238,31 +239,56 @@
       location.reload();
     });
 
+    function renderList(items) {
+      dataList.innerHTML = "";
+
+      if (!items || items.length === 0) {
+        dataList.innerHTML = "<p>No keys found.</p>";
+        return;
+      }
+
+      items.forEach((item) => {
+        const div = document.createElement("div");
+        div.classList.add("item");
+        div.innerHTML = `
+          <p><b>Device:</b> ${item.device_id ?? ""}</p>
+          <p><b>User:</b> ${item.user ?? ""}</p>
+          <p><b>Key:</b> ${item.key ?? ""}</p>
+          <p><b>Expiry:</b> ${item.expirydate ?? ""}</p>
+          <p><b>Offline:</b> ${item.Allowoffline ?? false}</p>
+          <div class="btn-group">
+            <button class="update" onclick="updateItem('${item.id}')">✏️ Update</button>
+            <button class="danger" onclick="deleteItem('${item.id}')">🗑 Delete</button>
+          </div>
+        `;
+        dataList.appendChild(div);
+      });
+    }
+
     function loadData() {
-      onValue(ref(db, "/"), (snapshot) => {
-        const data = snapshot.val();
-        dataList.innerHTML = "";
-        if (!data) {
-          dataList.innerHTML = "<p>No keys found.</p>";
-          return;
-        }
-        Object.keys(data).forEach((id) => {
-          const item = data[id];
-          const div = document.createElement("div");
-          div.classList.add("item");
-          div.innerHTML = `
-            <p><b>Device:</b> ${item.device_id}</p>
-            <p><b>User:</b> ${item.user}</p>
-            <p><b>Key:</b> ${item.key}</p>
-            <p><b>Expiry:</b> ${item.expirydate}</p>
-            <p><b>Offline:</b> ${item.Allowoffline}</p>
-            <div class="btn-group">
-              <button class="update" onclick="updateItem('${id}')">✏️ Update</button>
-              <button class="danger" onclick="deleteItem('${id}')">🗑 Delete</button>
-            </div>
-          `;
-          dataList.appendChild(div);
+      // Order by updatedAt so we can know which one is newest reliably
+      const q = query(ref(db, "/"), orderByChild("updatedAt"));
+
+      onValue(q, (snapshot) => {
+        const items = [];
+        snapshot.forEach((childSnap) => {
+          items.push({
+            id: childSnap.key,
+            ...childSnap.val()
+          });
         });
+
+        // Asc -> newest last; reverse to get newest first
+        items.reverse();
+
+        // newest ko 3rd (index 2) position par fix karo
+        if (items.length > 0) {
+          const newest = items.shift();
+          const insertIndex = Math.min(2, items.length);
+          items.splice(insertIndex, 0, newest);
+        }
+
+        renderList(items);
       });
     }
 
@@ -283,7 +309,8 @@
         key: key,
         expirydate: expiry,
         user: user,
-        Allowoffline: allow
+        Allowoffline: allow,
+        updatedAt: Date.now()
       });
 
       alert("✅ Saved / Updated Successfully!");
@@ -306,11 +333,11 @@
       onValue(dbRef, (snapshot) => {
         const item = snapshot.val();
         if (item) {
-          document.getElementById("deviceId").value = item.device_id;
-          document.getElementById("key").value = item.key;
-          document.getElementById("expiry").value = item.expirydate;
-          document.getElementById("username").value = item.user;
-          document.getElementById("allowOffline").checked = item.Allowoffline;
+          document.getElementById("deviceId").value = item.device_id ?? "";
+          document.getElementById("key").value = item.key ?? "";
+          document.getElementById("expiry").value = item.expirydate ?? "";
+          document.getElementById("username").value = item.user ?? "";
+          document.getElementById("allowOffline").checked = !!item.Allowoffline;
           window.scrollTo(0, 0);
         }
       }, { onlyOnce: true });
