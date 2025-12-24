@@ -174,6 +174,21 @@
       margin-left: 10px;
     }
 
+    /* Loading Spinner */
+    .loader {
+      border: 4px solid #2d2d2d;
+      border-top: 4px solid #ffc107;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 20px auto;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
     /* Modal Styles */
     .modal {
       display: none;
@@ -261,6 +276,7 @@
     <div id="loginSection" class="card" style="text-align:center;">
       <h3>Admin Login</h3>
       <p>Sign in securely using your Google account</p>
+      <div class="loader" id="loginLoader" style="display:none;"></div>
       <button id="loginBtn">🔐 Sign in with Google</button>
     </div>
 
@@ -307,7 +323,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
     import { getDatabase, ref, onValue, set, remove, get } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-database.js";
-    import { getAuth, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyA1FIDLD-AKVlEz-AJiweYVdxhIP0Rnijk",
@@ -324,6 +340,9 @@
     const auth = getAuth(app);
     const provider = new GoogleAuthProvider();
 
+    // Set persistence to LOCAL (survives browser close and page refresh)
+    setPersistence(auth, browserLocalPersistence);
+
     // Multiple admin emails allowed
     const ADMIN_EMAILS = [
       "www.webomprakashjat@gmail.com",
@@ -335,6 +354,7 @@
     let totalKeys = 0;
 
     const loginBtn = document.getElementById("loginBtn");
+    const loginLoader = document.getElementById("loginLoader");
     const loginSection = document.getElementById("loginSection");
     const mainPanel = document.getElementById("mainPanel");
     const dataList = document.getElementById("dataList");
@@ -351,27 +371,59 @@
       location.reload();
     };
 
+    // Check authentication state on page load
+    loginLoader.style.display = "block";
+    loginBtn.style.display = "none";
+
+    onAuthStateChanged(auth, (user) => {
+      loginLoader.style.display = "none";
+      
+      if (user) {
+        // User is signed in
+        if (ADMIN_EMAILS.includes(user.email)) {
+          // Authorized admin
+          adminEmailSpan.textContent = user.email;
+          adminInfo.style.display = "block";
+          loginSection.style.display = "none";
+          mainPanel.style.display = "block";
+          loadData();
+        } else {
+          // Unauthorized user
+          accessDeniedModal.style.display = "block";
+          signOut(auth);
+        }
+      } else {
+        // User is signed out
+        loginBtn.style.display = "inline-block";
+        adminInfo.style.display = "none";
+        loginSection.style.display = "block";
+        mainPanel.style.display = "none";
+      }
+    });
+
     loginBtn.addEventListener("click", async () => {
       try {
+        loginLoader.style.display = "block";
+        loginBtn.style.display = "none";
+        
         const result = await signInWithPopup(auth, provider);
         const user = result.user;
 
         // Check if user email is in the allowed admin emails list
         if (!ADMIN_EMAILS.includes(user.email)) {
-          // Show modal instead of alert
           accessDeniedModal.style.display = "block";
-
-          // Sign out the unauthorized user
           await signOut(auth);
+          loginLoader.style.display = "none";
+          loginBtn.style.display = "inline-block";
           return;
         }
 
-        adminEmailSpan.textContent = user.email;
-        adminInfo.style.display = "block";
-        loginSection.style.display = "none";
-        mainPanel.style.display = "block";
-        loadData();
+        // Login successful - onAuthStateChanged will handle UI updates
+        
       } catch (err) {
+        loginLoader.style.display = "none";
+        loginBtn.style.display = "inline-block";
+        
         if (err.code === 'auth/popup-closed-by-user') {
           console.log("Login popup closed by user");
         } else {
@@ -381,10 +433,30 @@
     });
 
     logoutBtn.addEventListener("click", async () => {
-      await signOut(auth);
-      alert("✅ Logged out successfully!");
-      location.reload();
+      if (confirm("क्या आप सच में logout करना चाहते हैं?")) {
+        await signOut(auth);
+        alert("✅ Logged out successfully!");
+        // onAuthStateChanged will handle UI updates
+      }
     });
+
+    // Handle browser back button
+    window.addEventListener('popstate', function(event) {
+      // Close the app when back is pressed
+      if (confirm("क्या आप app से exit करना चाहते हैं?")) {
+        window.close();
+        // If window.close() doesn't work, try to navigate to about:blank
+        if (!window.closed) {
+          window.location.href = "about:blank";
+        }
+      } else {
+        // Push state back to prevent navigation
+        history.pushState(null, null, window.location.href);
+      }
+    });
+
+    // Add initial state to history
+    history.pushState(null, null, window.location.href);
 
     function updatePositionDropdown(keysCount, isUpdate = false, currentPosition = null) {
       insertPosition.innerHTML = '<option value="">-- Select Position --</option>';
@@ -399,11 +471,10 @@
         insertPosition.appendChild(option);
       }
 
-      // Set current position if updating
       if (isUpdate && currentPosition !== null) {
         insertPosition.value = currentPosition;
       } else {
-        insertPosition.value = ""; // No default selection for new keys
+        insertPosition.value = "";
       }
 
       positionInfo.textContent = isUpdate ? `(Total ${keysCount} keys)` : `(Will be ${keysCount + 1} keys after adding)`;
@@ -489,7 +560,6 @@
           const snapshot = await get(ref(db, id));
           const existingData = snapshot.val();
 
-          // Check if position changed
           const snapshot2 = await get(ref(db, "/"));
           const allData = snapshot2.val() || {};
           const sortedItems = Object.keys(allData)
@@ -500,26 +570,20 @@
             }))
             .sort((a, b) => a.order - b.order);
 
-          // Find current position
           const currentPos = sortedItems.findIndex(item => item.id === id) + 1;
 
           if (currentPos !== insertPos) {
-            // Position changed, need to reorder
-            // Remove from current position
             const itemToMove = sortedItems.find(item => item.id === id);
             sortedItems.splice(currentPos - 1, 1);
 
-            // Update item data
             itemToMove.device_id = id;
             itemToMove.key = key;
             itemToMove.expirydate = expiry;
             itemToMove.user = user;
             itemToMove.Allowoffline = allow;
 
-            // Insert at new position
             sortedItems.splice(insertPos - 1, 0, itemToMove);
 
-            // Save all with new order
             for (let i = 0; i < sortedItems.length; i++) {
               const item = sortedItems[i];
               await set(ref(db, item.id), {
@@ -533,7 +597,6 @@
               });
             }
           } else {
-            // Only data updated, position same
             await set(ref(db, id), {
               device_id: id,
               key: key,
