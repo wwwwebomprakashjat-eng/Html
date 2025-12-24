@@ -336,30 +336,21 @@ allowOffline.checked = false;
         }
       }, { onlyOnce: true });
     };
-// 🔁 RUN ONCE MIGRATION
 async function migrateRootToKeys() {
   const rootRef = ref(db, "/");
   const keysRef = ref(db, "keys");
 
   onValue(rootRef, async (snap) => {
     const data = snap.val();
-    if (!data) return;
+    if (!data || data.keys) return;
 
-    // अगर keys already exist हैं तो कुछ मत करो
-    if (data.keys) {
-      console.log("Already migrated");
-      return;
-    }
+    const copy = {...data};
+    delete copy.keys;
 
-    await set(keysRef, data);   // copy all old keys into /keys
-    await remove(rootRef);      // clear root
-    console.log("✅ Migration done!");
-    alert("Old keys moved into /keys successfully!");
+    await set(keysRef, copy);
+    console.log("✅ Safe migration done");
   }, { onlyOnce: true });
 }
-
-// Call it once
-migrateRootToKeys();
   </script>
 </body>
 </html>
