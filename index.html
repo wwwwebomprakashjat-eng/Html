@@ -165,7 +165,7 @@
           <input type="text" id="deviceId" placeholder="Device ID">
           <input type="text" id="key" placeholder="Key">
           <input type="text" id="expiry" placeholder="Expiry (dd-mm-yyyy)">
-          <input type="number" id="position" placeholder="Insert Position (eg: 3)">
+          <input type="text" id="username" placeholder="User name">
           <label><input type="checkbox" id="allowOffline"> Allow Offline</label>
         </div>
         <button id="saveBtn" class="save">💾 Save / Update</button>
@@ -239,7 +239,7 @@
     });
 
     function loadData() {
-      onValue(ref(db, "keys"), (snapshot) => {
+      onValue(ref(db, "/"), (snapshot) => {
         const data = snapshot.val();
         dataList.innerHTML = "";
         if (!data) {
@@ -266,53 +266,37 @@
       });
     }
 
-    document.getElementById("saveBtn").addEventListener("click", () => {
+    document.getElementById("saveBtn").addEventListener("click", async () => {
+      const id = document.getElementById("deviceId").value.trim();
+      const key = document.getElementById("key").value.trim();
+      const expiry = document.getElementById("expiry").value.trim();
+      const user = document.getElementById("username").value.trim();
+      const allow = document.getElementById("allowOffline").checked;
 
-  const deviceIdv = deviceId.value.trim();
-  const keyv = key.value.trim();
-  const expiryv = expiry.value.trim();
-  const userv = username.value.trim();
-  const allow = allowOffline.checked;
-  const pos = parseInt(position.value) || 0;
+      if (!id || !key || !expiry || !user) {
+        alert("⚠️ Please fill all fields!");
+        return;
+      }
 
-  if (!deviceIdv || !keyv || !expiryv || !userv) {
-    alert("⚠️ Please fill all fields!");
-    return;
-  }
+      await set(ref(db, id), {
+        device_id: id,
+        key: key,
+        expirydate: expiry,
+        user: user,
+        Allowoffline: allow
+      });
 
-  const rootRef = ref(db, "keys");
-
-  onValue(rootRef, async (snap) => {
-
-    let arr = Object.values(snap.val() || {});
-
-    let newObj = {
-      device_id: deviceIdv,
-      key: keyv,
-      expirydate: expiryv,
-      user: userv,
-      Allowoffline: allow
-    };
-
-    if (pos > 0 && pos <= arr.length) {
-      arr.splice(pos - 1, 0, newObj);   // 🔥 middle insert
-    } else {
-      arr.push(newObj);                // last add
-    }
-
-    let finalObj = {};
-    arr.forEach((v, i) => finalObj[i + 1] = v);
-
-    set(rootRef, finalObj);
-    alert("✅ Inserted Successfully!");
-  }, { onlyOnce: true });
-});
+      alert("✅ Saved / Updated Successfully!");
+      document.getElementById("deviceId").value = "";
+      document.getElementById("key").value = "";
+      document.getElementById("expiry").value = "";
+      document.getElementById("username").value = "";
       document.getElementById("allowOffline").checked = false;
     });
 
     window.deleteItem = async (id) => {
       if (confirm("Delete this key?")) {
-        await remove(ref(db, "keys/" + id));
+        await remove(ref(db, id));
         alert("🗑 Deleted successfully!");
       }
     };
