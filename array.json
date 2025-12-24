@@ -1,3 +1,4 @@
+{
 <script>
 fetch("https://opjat-2005-default-rtdb.asia-southeast1.firebasedatabase.app/keys.json")
 .then(r=>r.json())
@@ -6,3 +7,4 @@ fetch("https://opjat-2005-default-rtdb.asia-southeast1.firebasedatabase.app/keys
   document.write(JSON.stringify(arr));
 });
 </script>
+}
