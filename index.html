@@ -1,320 +1,110 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>🔥 NMMS Admin Panel</title>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
-    * { box-sizing: border-box; }
-    body {
-      font-family: 'Poppins', sans-serif;
-      background: linear-gradient(135deg, #0a0a0a, #1f1f1f);
-      color: #f5f5f5;
-      margin: 0; padding: 0;
-      min-height: 100vh;
-    }
-    header {
-      background: #111;
-      padding: 15px 25px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid #333;
-      box-shadow: 0 0 10px rgba(255,255,255,0.1);
-    }
-    header h1 {
-      margin: 0;
-      color: #ffc107;
-      font-size: 1.5em;
-    }
-    .admin-info {
-      font-size: 0.9em;
-      color: #ddd;
-    }
-    .admin-info span {
-      color: #ffc107;
-    }
-    .logout-btn {
-      background: #e53935;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      padding: 6px 12px;
-      font-weight: 600;
-      cursor: pointer;
-      margin-left: 10px;
-    }
-    main {
-      max-width: 1100px;
-      margin: 30px auto;
-      padding: 20px;
-    }
-    .card {
-      background: #1e1e1e;
-      border-radius: 15px;
-      padding: 20px;
-      box-shadow: 0 0 20px rgba(0,0,0,0.5);
-      margin-bottom: 25px;
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-    .card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 0 25px rgba(255,255,255,0.08);
-    }
-    .card h3 {
-      margin-top: 0;
-      color: #ffc107;
-    }
-    input, button {
-      padding: 10px;
-      margin: 8px 6px;
-      border-radius: 8px;
-      border: none;
-      font-size: 15px;
-      transition: all 0.2s ease;
-    }
-    input {
-      width: calc(25% - 12px);
-      background: #2d2d2d;
-      color: #fff;
-      border: 1px solid #444;
-      outline: none;
-    }
-    input:focus {
-      background: #333;
-      border-color: #ffc107;
-      box-shadow: 0 0 8px #ffc10755;
-    }
-    input::placeholder {
-      color: #aaa;
-    }
-    button {
-      cursor: pointer;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-    }
-    button#loginBtn {
-      background: #ffc107;
-      color: #111;
-      padding: 12px 18px;
-      font-size: 1em;
-    }
-    button.save { background: #007bff; color: #fff; }
-    button.update { background: #43a047; color: #fff; }
-    button.danger { background: #e53935; color: #fff; }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-      gap: 15px;
-    }
-    .item {
-      background: #252525;
-      padding: 15px;
-      border-radius: 10px;
-      border: 1px solid #333;
-      text-align: left;
-      transition: background 0.3s ease;
-    }
-    .item:hover {
-      background: #2e2e2e;
-    }
-    .item p {
-      margin: 6px 0;
-      font-size: 14px;
-      color: #ddd;
-    }
-    .item b { color: #ffc107; }
-    footer {
-      text-align: center;
-      color: #888;
-      padding: 10px;
-      font-size: 0.9em;
-    }
-    .btn-group {
-      margin-top: 10px;
-      display: flex;
-      justify-content: space-between;
-    }
-    @media (max-width: 768px) {
-      header { flex-direction: column; text-align: center; }
-      input { width: 100%; margin: 8px 0; }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🔥 NMMS Admin Panel</title>
+<style>
+body{margin:0;font-family:Poppins,sans-serif;background:#0a0a0a;color:#fff}
+input,button{padding:10px;margin:5px;border-radius:6px;border:none}
+input{background:#222;color:#fff;width:100%}
+.card{background:#1a1a1a;padding:15px;border-radius:10px;margin:15px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
+.item{background:#222;padding:10px;border-radius:8px}
+.save{background:#ffc107;color:#000;font-weight:bold}
+</style>
 </head>
+
 <body>
-  <header>
-    <h1>🔥 NMMS Admin Panel</h1>
-    <div class="admin-info" id="adminInfo" style="display:none;">
-      Logged in as: <span id="adminEmail"></span>
-      <button class="logout-btn" id="logoutBtn">🚪 Logout</button>
-    </div>
-  </header>
 
-  <main>
-    <div id="loginSection" class="card" style="text-align:center;">
-      <h3>Admin Login</h3>
-      <p>Sign in securely using your Google account</p>
-      <button id="loginBtn">🔐 Sign in with Google</button>
-    </div>
+<div class="card" id="loginBox">
+<h3>Admin Login</h3>
+<button onclick="login()">Sign in with Google</button>
+</div>
 
-    <div id="mainPanel" style="display:none;">
-      <div class="card">
-        <h3>➕ Add / Update License Key</h3>
-        <div>
-          <input type="text" id="deviceId" placeholder="Device ID">
-          <input type="text" id="key" placeholder="Key">
-          <input type="text" id="expiry" placeholder="Expiry (dd-mm-yyyy)">
-          <input type="text" id="username" placeholder="User name">
-          <label><input type="checkbox" id="allowOffline"> Allow Offline</label>
-        </div>
-        <button id="saveBtn" class="save">💾 Save / Update</button>
-      </div>
+<div id="panel" style="display:none">
+<div class="card">
+<input id="deviceId" placeholder="Device ID">
+<input id="key" placeholder="Key">
+<input id="expiry" placeholder="Expiry">
+<input id="username" placeholder="User Name">
+<input id="position" placeholder="Insert Position (eg: 3)">
+<label><input type="checkbox" id="allowOffline"> Allow Offline</label><br>
+<button class="save" onclick="saveKey()">SAVE</button>
+</div>
 
-      <div class="card">
-        <h3>📜 Active Keys (Realtime)</h3>
-        <div id="dataList" class="grid"></div>
-      </div>
-    </div>
-  </main>
-  <footer>© 2025 NMMS Tools | Admin Panel</footer>
+<div class="card">
+<h3>All Keys</h3>
+<div id="list" class="grid"></div>
+</div>
+</div>
 
-  <!-- Firebase Script -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-    import { getDatabase, ref, onValue, set, remove } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-database.js";
-    import { getAuth, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+import { getDatabase, ref, set, onValue, remove } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-database.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyA1FIDLD-AKVlEz-AJiweYVdxhIP0Rnijk",
-      authDomain: "opjat-2005.firebaseapp.com",
-      databaseURL: "https://opjat-2005-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "opjat-2005",
-      storageBucket: "opjat-2005.firebasestorage.app",
-      messagingSenderId: "2500552965",
-      appId: "1:2500552965:web:4f6664a366967a2525af6c"
-    };
+const firebaseConfig = {
+ apiKey: "AIzaSyA1FIDLD-AKVlEz-AJiweYVdxhIP0Rnijk",
+ authDomain: "opjat-2005.firebaseapp.com",
+ databaseURL: "https://opjat-2005-default-rtdb.asia-southeast1.firebasedatabase.app",
+ projectId: "opjat-2005",
+};
 
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-    const auth = getAuth(app);
-    const provider = new GoogleAuthProvider();
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
 
-    const ADMIN_EMAIL = "www.webomprakashjat@gmail.com";
+window.login = async()=>{
+ let r = await signInWithPopup(auth, provider);
+ if(r.user.email!="www.webomprakashjat@gmail.com"){alert("Not admin");return;}
+ document.getElementById("loginBox").style.display="none";
+ document.getElementById("panel").style.display="block";
+ load();
+}
 
-    const loginBtn = document.getElementById("loginBtn");
-    const loginSection = document.getElementById("loginSection");
-    const mainPanel = document.getElementById("mainPanel");
-    const dataList = document.getElementById("dataList");
-    const adminInfo = document.getElementById("adminInfo");
-    const adminEmailSpan = document.getElementById("adminEmail");
-    const logoutBtn = document.getElementById("logoutBtn");
+function load(){
+ onValue(ref(db,"keys"),s=>{
+  let d=s.val()||{};
+  list.innerHTML="";
+  Object.keys(d).forEach(k=>{
+   let v=d[k];
+   list.innerHTML+=`
+    <div class="item">
+    ${k}. ${v.device_id}<br>
+    ${v.user}<br>
+    ${v.key}<br>
+    ${v.expirydate}<br>
+    Offline: ${v.Allowoffline}<br>
+    <button onclick="del('${k}')">Delete</button>
+    </div>`;
+  });
+ });
+}
 
-    loginBtn.addEventListener("click", async () => {
-      try {
-        const result = await signInWithPopup(auth, provider);
-        const user = result.user;
+window.saveKey = ()=>{
+ let obj={
+  device_id:deviceId.value,
+  key:key.value,
+  expirydate:expiry.value,
+  user:username.value,
+  Allowoffline:allowOffline.checked
+ };
+ let pos=parseInt(position.value)||0;
 
-        if (user.email !== ADMIN_EMAIL) {
-          alert("🚫 Access Denied!\nOnly admin can log in.");
-          await signOut(auth);
-          location.reload();
-          return;
-        }
+ onValue(ref(db,"keys"),async s=>{
+  let arr=Object.values(s.val()||{});
+  if(pos>0 && pos<=arr.length) arr.splice(pos-1,0,obj);
+  else arr.push(obj);
 
-        adminEmailSpan.textContent = user.email;
-        adminInfo.style.display = "block";
-        loginSection.style.display = "none";
-        mainPanel.style.display = "block";
-        loadData();
-      } catch (err) {
-        alert("❌ Login failed: " + err.message);
-      }
-    });
+  let final={}; arr.forEach((v,i)=>final[i+1]=v);
+  await set(ref(db,"keys"),final);
+  alert("Inserted!");
+ },{onlyOnce:true});
+}
 
-    logoutBtn.addEventListener("click", async () => {
-      await signOut(auth);
-      alert("✅ Logged out successfully!");
-      location.reload();
-    });
-
-    function loadData() {
-      onValue(ref(db, "/"), (snapshot) => {
-        const data = snapshot.val();
-        dataList.innerHTML = "";
-        if (!data) {
-          dataList.innerHTML = "<p>No keys found.</p>";
-          return;
-        }
-        Object.keys(data).forEach((id) => {
-          const item = data[id];
-          const div = document.createElement("div");
-          div.classList.add("item");
-          div.innerHTML = `
-            <p><b>Device:</b> ${item.device_id}</p>
-            <p><b>User:</b> ${item.user}</p>
-            <p><b>Key:</b> ${item.key}</p>
-            <p><b>Expiry:</b> ${item.expirydate}</p>
-            <p><b>Offline:</b> ${item.Allowoffline}</p>
-            <div class="btn-group">
-              <button class="update" onclick="updateItem('${id}')">✏️ Update</button>
-              <button class="danger" onclick="deleteItem('${id}')">🗑 Delete</button>
-            </div>
-          `;
-          dataList.appendChild(div);
-        });
-      });
-    }
-
-    document.getElementById("saveBtn").addEventListener("click", async () => {
-      const id = document.getElementById("deviceId").value.trim();
-      const key = document.getElementById("key").value.trim();
-      const expiry = document.getElementById("expiry").value.trim();
-      const user = document.getElementById("username").value.trim();
-      const allow = document.getElementById("allowOffline").checked;
-
-      if (!id || !key || !expiry || !user) {
-        alert("⚠️ Please fill all fields!");
-        return;
-      }
-
-      await set(ref(db, id), {
-        device_id: id,
-        key: key,
-        expirydate: expiry,
-        user: user,
-        Allowoffline: allow
-      });
-
-      alert("✅ Saved / Updated Successfully!");
-      document.getElementById("deviceId").value = "";
-      document.getElementById("key").value = "";
-      document.getElementById("expiry").value = "";
-      document.getElementById("username").value = "";
-      document.getElementById("allowOffline").checked = false;
-    });
-
-    window.deleteItem = async (id) => {
-      if (confirm("Delete this key?")) {
-        await remove(ref(db, id));
-        alert("🗑 Deleted successfully!");
-      }
-    };
-
-    window.updateItem = async (id) => {
-      const dbRef = ref(db, id);
-      onValue(dbRef, (snapshot) => {
-        const item = snapshot.val();
-        if (item) {
-          document.getElementById("deviceId").value = item.device_id;
-          document.getElementById("key").value = item.key;
-          document.getElementById("expiry").value = item.expirydate;
-          document.getElementById("username").value = item.user;
-          document.getElementById("allowOffline").checked = item.Allowoffline;
-          window.scrollTo(0, 0);
-        }
-      }, { onlyOnce: true });
-    };
-  </script>
+window.del = async(id)=>{ await remove(ref(db,"keys/"+id)); }
+</script>
 </body>
 </html>
