@@ -1,0 +1,8 @@
+<script>
+fetch("https://opjat-2005-default-rtdb.asia-southeast1.firebasedatabase.app/keys.json")
+.then(r=>r.json())
+.then(d=>{
+  let arr = Object.values(d);
+  document.write(JSON.stringify(arr));
+});
+</script>
